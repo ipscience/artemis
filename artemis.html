@@ -2092,7 +2092,7 @@
                                 </select>
                             </div>
                         </div>
-                        <button id="btn-wordcloud" class="btn">ワードクラウドを生</button>
+                        <button id="btn-wordcloud" class="btn">ワードクラウドを生成</button>
                         <div id="wordcloud-chart" class="chart-container" style="margin-top: 0.8rem;"></div>
                         <button class="btn btn-secondary" onclick="saveSnapshot('wordcloud-chart', 'ワードクラウド)" style="margin-top: 0.5rem;">スナップショットを保存</button>
                     </div>
@@ -8605,16 +8605,37 @@ def build_network(event):
         debugLog(traceback.format_exc())
 
 # =====================================================
-# MEGA - ワードクラウド！E3-cloud使用# =====================================================
+# MEGA - ワードクラウド（D3-cloud使用）
+# =====================================================
 def show_wordcloud(event):
     """
     d3-cloudを使用した本格的なワードクラウドを生成する。
     TF-IDFスコアに基づいて単語サイズと配置を決定。
+    TF-IDF未実行の場合は自動的に実行する。
     """
-    global g_tfidf_matrix, g_feature_names
-    if g_tfidf_matrix is None:
-        document.getElementById('wordcloud-chart').innerHTML = '<div class="status-warn">先にTF-IDF分析を実行してください</div>'
+    global g_tfidf_matrix, g_feature_names, g_vectorizer, g_df_processed
+    
+    # データ確認
+    if g_df_processed is None:
+        document.getElementById('wordcloud-chart').innerHTML = '<div class="status-warn">先にCSVデータを読み込んでください</div>'
         return
+    
+    # TF-IDF未実行なら自動実行
+    if g_tfidf_matrix is None:
+        document.getElementById('wordcloud-chart').innerHTML = '<div class="status-info">🔄 TF-IDF分析を自動実行中...</div>'
+        
+        if not ensure_sklearn():
+            document.getElementById('wordcloud-chart').innerHTML = '<div class="status-warn">scikit-learnを読み込み中です。しばらく待ってから再実行してください。</div>'
+            return
+        
+        try:
+            g_vectorizer = TfidfVectorizer(max_features=2000, min_df=2, max_df=0.95)
+            g_tfidf_matrix = g_vectorizer.fit_transform(g_df_processed['tokenized'].fillna(''))
+            g_feature_names = g_vectorizer.get_feature_names_out().tolist()
+            debugLog(f"[WordCloud] TF-IDF自動実行完了: {len(g_feature_names)} features")
+        except Exception as e:
+            document.getElementById('wordcloud-chart').innerHTML = f'<div class="status-err">TF-IDF分析エラー: {str(e)}</div>'
+            return
     
     max_words = int(document.getElementById('wc-max-words').value)
     colorscheme = document.getElementById('wc-colorscheme').value
