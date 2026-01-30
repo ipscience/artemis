@@ -3606,7 +3606,6 @@
             const dropZone = document.getElementById('drop-zone');
             const fileInputHome = document.getElementById('file-input-home');
             const fileInput = document.getElementById('file-input');
-            const dataTransfer = new DataTransfer();
             
             if (!dropZone) return;
             
@@ -3626,11 +3625,12 @@
                 
                 const files = e.dataTransfer.files;
                 if (files.length > 0 && files[0].name.endsWith('.csv')) {
+                    const dataTransfer = new DataTransfer();
                     dataTransfer.items.add(files[0]);
                     if (fileInputHome) fileInputHome.files = dataTransfer.files;
                     if (fileInput) {
                         fileInput.files = dataTransfer.files;
-                        fileInput.dispatchEvent(new Event('change'));
+                        fileInput.dispatchEvent(new Event('change', { bubbles: true }));
                     }
                     updateHomeFileStatus(files[0].name);
                     showToast('success', `📄 ${files[0].name} を読み込みました`);
@@ -3643,10 +3643,11 @@
                 fileInputHome.addEventListener('change', (e) => {
                     const file = e.target.files[0];
                     if (file) {
+                        const dataTransfer = new DataTransfer();
                         dataTransfer.items.add(file);
                         if (fileInput) {
                             fileInput.files = dataTransfer.files;
-                            fileInput.dispatchEvent(new Event('change'));
+                            fileInput.dispatchEvent(new Event('change', { bubbles: true }));
                         }
                         updateHomeFileStatus(file.name);
                     }
@@ -5475,6 +5476,9 @@
         
         // 初期ページを設定
         currentPage = document.getElementById('page-home');
+        
+        // ドロップゾーンの設定
+        setupDropZone();
     </script>
 
     <script type="py" config='{"packages": ["pandas", "numpy"]}'>
