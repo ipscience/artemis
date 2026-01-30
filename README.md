@@ -80,7 +80,7 @@ artemis/
 
 ## 📄 ライセンス
 
-MIT License - 詳細は [LICENSE.txt](LICENSE.txt) を参照
+MIT License - 詳細は [LICENSE](LICENSE) を参照
 
 ## 🙏 謝辞
 
