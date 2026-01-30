@@ -3746,7 +3746,7 @@
                 if (container) {
                     container.innerHTML = `
                         <div class="status-message error">
-                            <span class="status-icon">⚠/span>
+                            <span class="status-icon">⚠</span>
                             <div class="status-content">
                                 <div class="status-title">グラフ描画エラー</div>
                                 <div class="status-detail">${e.message}</div>
@@ -4376,7 +4376,7 @@
         window.bubbleRaceState = { running: false, timer: null, yearIndex: 0, initialized: false };
         
         window.bubbleRacePlay = function() {
-            const btn = document.getElementById('race-play-btn');
+            const btn = document.getElementById('btn-race-play');
             if (!window.bubbleRaceState.initialized) {
                 debugLog('BubbleRace: Initializing data first...');
                 if (btn) btn.textContent = '準備中...';
