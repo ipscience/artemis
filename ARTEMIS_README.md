@@ -60,9 +60,9 @@
 
 ```
 artemis/
-├── artemis.html    # メインアプリケーション（単一ファイル）
-├── ARTEMIS_README.md
-└── ARTEMIS_LICENSE.txt
+├── artemis.html               # メインアプリケーション（単一ファイル）
+├── ARTEMIS_README.md          # このファイル
+└── LICENSE.txt                # MITライセンス
 ```
 
 ## 🧪 テスト
@@ -97,7 +97,7 @@ python -m pytest tests/test_artemis_functions.py -v
 
 ## 📄 ライセンス
 
-MIT License - 詳細は [ARTEMIS_LICENSE.txt](ARTEMIS_LICENSE.txt) を参照
+MIT License - 詳細は [LICENSE.txt](LICENSE.txt) を参照
 
 ## 🙏 謝辞
 
