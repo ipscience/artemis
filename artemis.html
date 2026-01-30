@@ -1336,7 +1336,7 @@
         <p id="init-elapsed" class="init-subtitle">経過時間: 0秒</p>
         <p id="init-detail" class="init-detail">Pyodide + pandas + numpy をダウンロード中</p>
         <p class="init-hint">最小構成で起動中。重いモジュールはバックグラウンドで読み込み</p>
-        <p id="bg-load-status" style="font-size: 0.75rem; opacity: 0.5; margin-top: 0.4rem;">追加モジュール: 未ロート</p>
+        <p id="bg-load-status" style="font-size: 0.75rem; opacity: 0.5; margin-top: 0.4rem;">追加モジュール: 未ロード</p>
         <div class="bg-progress"><div id="bg-load-progress-fill" class="bg-progress-fill"></div></div>
         <div id="bg-load-detail" class="bg-module-list"></div>
     </div>
@@ -1349,18 +1349,18 @@
     
     <div class="container">
         <div class="sidebar">
-            <button class="nav-btn active" onclick="showPage('home')" title="ダッシュボード><span class="nav-label">ダッシュボード</span></button>
-            <button class="nav-btn" onclick="showPage('mission')" title="前処理><span class="nav-label">前処理</span></button>
+            <button class="nav-btn active" onclick="showPage('home')" title="ダッシュボード"><span class="nav-label">ダッシュボード</span></button>
+            <button class="nav-btn" onclick="showPage('mission')" title="前処理"><span class="nav-label">前処理</span></button>
             <div class="nav-divider"></div>
-            <button class="nav-btn" onclick="showPage('atlas')" title="統計チャート><span class="nav-label">統計チャート</span></button>
-            <button class="nav-btn" onclick="showPage('core')" title="論理分><span class="nav-label">論理分類</span></button>
-            <button class="nav-btn" onclick="showPage('mega')" title="テキスト分析><span class="nav-label">テキスト分析</span></button>
+            <button class="nav-btn" onclick="showPage('atlas')" title="統計チャート"><span class="nav-label">統計チャート</span></button>
+            <button class="nav-btn" onclick="showPage('core')" title="論理分類"><span class="nav-label">論理分類</span></button>
+            <button class="nav-btn" onclick="showPage('mega')" title="テキスト分析"><span class="nav-label">テキスト分析</span></button>
             <button class="nav-btn" onclick="showPage('saturn')" title="技術マップ"><span class="nav-label">技術マップ</span></button>
-            <button class="nav-btn" onclick="showPage('explorer')" title="キーワーチ><span class="nav-label">キーワード</span></button>
+            <button class="nav-btn" onclick="showPage('explorer')" title="キーワード"><span class="nav-label">キーワード</span></button>
             <button class="nav-btn" onclick="showPage('crew')" title="ネットワーク"><span class="nav-label">ネットワーク</span></button>
-            <button class="nav-btn" onclick="showPage('advanced')" title="アドバンスチ><span class="nav-label">アドバンスト</span></button>
+            <button class="nav-btn" onclick="showPage('advanced')" title="アドバンスト"><span class="nav-label">アドバンスト</span></button>
             <div class="nav-divider"></div>
-            <button class="nav-btn" onclick="showPage('export')" title="エクスポチ><span class="nav-label">エクスポト</span></button>
+            <button class="nav-btn" onclick="showPage('export')" title="エクスポート"><span class="nav-label">エクスポート</span></button>
             <div class="module-status">
                 <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.3rem;">
                     <div class="module-status-item" style="flex-direction: column; align-items: center; padding: 0.2rem;">
@@ -1373,15 +1373,15 @@
                     </div>
                     <div class="module-status-item" style="flex-direction: column; align-items: center; padding: 0.2rem;">
                         <span id="mod-saturn-status" style="font-size: 0.7rem; color: var(--color-primary);">0%</span>
-                        <span style="font-size: 0.55rem;">マット</span>
+                        <span style="font-size: 0.55rem;">マップ</span>
                     </div>
                     <div class="module-status-item" style="flex-direction: column; align-items: center; padding: 0.2rem;">
                         <span id="mod-explorer-status" style="font-size: 0.7rem; color: var(--color-primary);">0%</span>
-                        <span style="font-size: 0.55rem;">KW</span>
+                        <span style="font-size: 0.55rem;">キーワード</span>
                     </div>
                     <div class="module-status-item" style="flex-direction: column; align-items: center; padding: 0.2rem;">
                         <span id="mod-crew-status" style="font-size: 0.7rem; color: var(--color-primary);">0%</span>
-                        <span style="font-size: 0.55rem;">NW</span>
+                        <span style="font-size: 0.55rem;">ネットワーク</span>
                     </div>
                     <div class="module-status-item" style="flex-direction: column; align-items: center; padding: 0.2rem;">
                         <span id="mod-export-status" style="font-size: 0.7rem; color: var(--color-primary);">0%</span>
@@ -1495,7 +1495,7 @@
                     </div>
                     
                     <div id="mission-tab-import" class="tab-content active">
-                        <p style="margin-bottom: 0.8rem; font-size: 0.9rem;">CSVファイルをアップロードしてください。/p>
+                        <p style="margin-bottom: 0.8rem; font-size: 0.9rem;">CSVファイルをアップロードしてください。</p>
                         <input type="file" id="file-input" accept=".csv">
                         <div id="preview-area" style="margin-top: 0.8rem;"></div>
                     </div>
@@ -1534,7 +1534,7 @@
                     </div>
                     
                     <div id="mission-tab-launch" class="tab-content">
-                        <p style="margin-bottom: 0.8rem; font-size: 0.9rem;">分析エンジンを起動して前処理実行します。/p>
+                        <p style="margin-bottom: 0.8rem; font-size: 0.9rem;">分析エンジンを起動して前処理を実行します。</p>
                         <button id="btn-launch" class="btn" style="width: 100%;">分析エンジンを起動</button>
                         <div class="progress-bar" style="display: none;" id="launch-progress">
                             <div class="progress-fill" id="launch-progress-fill" style="width: 0%;"></div>
@@ -1591,7 +1591,7 @@
                             <label>IPCレベル</label>
                             <select id="atlas-ipc-level">
                                 <option value="1">サブクラス (A01B)</option>
-                                <option value="2">メイングルーチ(A01B 1/00)</option>
+                                <option value="2">メイングループ (A01B 1/00)</option>
                             </select>
                         </div>
                         <div class="form-group">
@@ -1610,7 +1610,7 @@
                             <label>IPCレベル</label>
                             <select id="atlas-ipcapp-level">
                                 <option value="1">サブクラス</option>
-                                <option value="2">メイングルート</option>
+                                <option value="2">メイングループ</option>
                             </select>
                         </div>
                         <div class="form-group">
@@ -1646,7 +1646,7 @@
                     </div>
                     <button id="btn-atlas" class="btn" style="margin: 0.5rem 0;">チャートを描画</button>
                     <div id="atlas-chart" class="chart-container"></div>
-                    <button class="btn btn-secondary" onclick="saveSnapshot('atlas-chart', '統計チャート)" style="margin-top: 0.5rem;">スナップショットを保存</button>
+                    <button class="btn btn-secondary" onclick="saveSnapshot('atlas-chart', '統計チャート')" style="margin-top: 0.5rem;">スナップショットを保存</button>
                 </div>
             </div>
             
@@ -1683,7 +1683,7 @@
                         </div>
                         <div class="checkbox-group">
                             <input type="checkbox" id="core-ai-mece" checked>
-                            <label for="core-ai-mece" style="color: #e0e1dd;">MECEモード(自動決定</label>
+                            <label for="core-ai-mece" style="color: #e0e1dd;">MECEモード（自動決定）</label>
                         </div>
                         <button class="btn" id="btn-core-ai" style="margin-top:0.5rem;">🧠 AIアシスタント用プロンプト生成</button>
                         <div id="core-ai-output" style="margin-top:0.8rem;"></div>
@@ -1706,15 +1706,15 @@
                         <div class="grid-3">
                             <div class="form-group">
                                 <label>新規軸名</label>
-                                <input type="text" id="core-axis-new" placeholder="侁 課題顁>
+                                <input type="text" id="core-axis-new" placeholder="例: 課題軸">
                             </div>
                             <div class="form-group">
-                                <label>分名</label>
-                                <input type="text" id="core-cat-name" placeholder="侁 耐乁向上>
+                                <label>分類名</label>
+                                <input type="text" id="core-cat-name" placeholder="例: 耐久性向上">
                             </div>
                             <div class="form-group">
                                 <label>論理式</label>
-                                <input type="text" id="core-cat-rule" placeholder="(耐乁 + 寿命) * 向上>
+                                <input type="text" id="core-cat-rule" placeholder="(耐久 + 寿命) * 向上">
                             </div>
                         </div>
                         <div class="form-group">
@@ -1734,21 +1734,21 @@
                     </div>
 
                     <div id="core-phase3" class="core-phase" style="display:none;">
-                        <p style="color:#9fb3c8;">探索対象は「タイトル+要約結合テキストです。/p>
+                        <p style="color:#9fb3c8;">探索対象は「タイトル+要約」結合テキストです。</p>
                         <button class="btn" id="btn-core-run">▶ すべての分類を実行</button>
                         <div id="core-run-status" style="margin-top:0.8rem;"></div>
                         <div id="core-summary" style="margin-top:0.8rem;"></div>
                         <div style="margin-top:0.8rem;">
-                            <label>分結果CSVコピー用</label>
+                            <label>分類結果CSVコピー用</label>
                             <textarea id="core-csv" rows="6" readonly></textarea>
                         </div>
                         <div class="grid-2" style="margin-top:0.8rem;">
                             <div class="form-group">
-                                <label>再析する軸</label>
+                                <label>再分析する軸</label>
                                 <select id="core-reanalyze-axis"></select>
                             </div>
                             <div class="form-group">
-                                <label>抽出トピチ数 (K)</label>
+                                <label>抽出トピック数 (K)</label>
                                 <input type="number" id="core-reanalyze-k" value="5" min="1" max="10">
                             </div>
                             <div class="form-group">
@@ -1758,7 +1758,7 @@
                         </div>
                         <div class="checkbox-group" style="margin-top:0.4rem;">
                             <input type="checkbox" id="core-reanalyze-mece" checked>
-                            <label for="core-reanalyze-mece" style="color:#e0e1dd;">MECEモード(自動決定</label>
+                            <label for="core-reanalyze-mece" style="color:#e0e1dd;">MECEモード（自動決定）</label>
                         </div>
                         <button class="btn" id="btn-core-reanalyze" style="margin-top:0.6rem;">🔁 『その他』を再分析</button>
                         <div id="core-reanalyze-output" style="margin-top:0.8rem;"></div>
@@ -1791,8 +1791,8 @@
                         <button class="btn btn-secondary" onclick="saveSnapshot('core-map', '論理分類')" style="margin-top: 0.5rem;">スナップショットを保存</button>
                         <hr style="margin:1rem 0; border-color:#2b3a4a;">
                         <div class="form-group">
-                            <label>検索クエリND, OR, NOT, nearN, adjN対応！/label>
-                            <input type="text" id="core-query" placeholder="侁 (電池 + セル) * (リチウム + ナトリウム)">
+                            <label>検索クエリ（AND, OR, NOT, nearN, adjN対応）</label>
+                            <input type="text" id="core-query" placeholder="例: (電池 + セル) * (リチウム + ナトリウム)">
                         </div>
                         <div class="grid-2">
                             <div class="form-group">
@@ -1884,12 +1884,12 @@
                     
                     <div id="explorer-tab-trend" class="tab-content">
                         <div class="form-group">
-                            <label>キーワード（カンマ区切り</label>
-                            <input type="text" id="trend-keywords" placeholder="侁 AI, 機械学翁 チープラーニング">
+                            <label>キーワード（カンマ区切り）</label>
+                            <input type="text" id="trend-keywords" placeholder="例: AI, 機械学習, ディープラーニング">
                         </div>
                         <button id="btn-trend" class="btn">トレンドを分析</button>
                         <div id="trend-chart" class="chart-container" style="margin-top: 0.8rem;"></div>
-                        <button class="btn btn-secondary" onclick="saveSnapshot('trend-chart', 'トレンド)" style="margin-top: 0.5rem;">スナップショットを保存</button>
+                        <button class="btn btn-secondary" onclick="saveSnapshot('trend-chart', 'トレンド')" style="margin-top: 0.5rem;">スナップショットを保存</button>
                     </div>
                     
                     <div id="explorer-tab-compare" class="tab-content">
@@ -1899,7 +1899,7 @@
                         </div>
                         <button id="btn-compare" class="btn">比較実行</button>
                         <div id="compare-chart" class="chart-container" style="margin-top: 0.8rem;"></div>
-                        <button class="btn btn-secondary" onclick="saveSnapshot('compare-chart', '企業比較)" style="margin-top: 0.5rem;">スナップショットを保存</button>
+                        <button class="btn btn-secondary" onclick="saveSnapshot('compare-chart', '企業比較')" style="margin-top: 0.5rem;">スナップショットを保存</button>
                     </div>
                     
                     <div id="explorer-tab-heatmap" class="tab-content">
@@ -1919,10 +1919,10 @@
                     </div>
                     
                     <div id="explorer-tab-emerging" class="tab-content">
-                        <p style="margin-bottom: 0.8rem; font-size: 0.85rem;">直近期間で急上昇しているキーワードを検出します。/p>
+                        <p style="margin-bottom: 0.8rem; font-size: 0.85rem;">直近期間で急上昇しているキーワードを検出します。</p>
                         <div class="grid-2">
                             <div class="form-group">
-                                <label>基準年この年以降を「直近」とする</label>
+                                <label>基準年（この年以降を「直近」とする）</label>
                                 <input type="number" id="emerging-year" value="2020">
                             </div>
                             <div class="form-group">
@@ -1930,17 +1930,17 @@
                                 <input type="number" id="emerging-top" value="20" min="10" max="50">
                             </div>
                         </div>
-                        <button id="btn-emerging" class="btn">急上ワードを検</button>
+                        <button id="btn-emerging" class="btn">急上昇ワードを検出</button>
                         <div id="emerging-chart" class="chart-container" style="margin-top: 0.8rem;"></div>
-                        <button class="btn btn-secondary" onclick="saveSnapshot('emerging-chart', '急上ワーチ)" style="margin-top: 0.5rem;">スナップショットを保存</button>
+                        <button class="btn btn-secondary" onclick="saveSnapshot('emerging-chart', '急上昇ワード')" style="margin-top: 0.5rem;">スナップショットを保存</button>
                     </div>
                     
                     <div id="explorer-tab-kwic" class="tab-content">
-                        <p style="margin-bottom: 0.8rem; font-size: 0.85rem;">キーワード文脈を確認します！EWIC: Keyword in Context/p>
+                        <p style="margin-bottom: 0.8rem; font-size: 0.85rem;">キーワード文脈を確認します（KWIC: Keyword in Context）</p>
                         <div class="grid-2">
                             <div class="form-group">
                                 <label>検索キーワード</label>
-                                <input type="text" id="kwic-keyword" placeholder="侁 ロボッチ>
+                                <input type="text" id="kwic-keyword" placeholder="例: ロボット">
                             </div>
                             <div class="form-group">
                                 <label>前後語数</label>
@@ -1977,9 +1977,9 @@
                                 <input type="number" id="stream-count" value="8" min="3" max="15">
                             </div>
                         </div>
-                        <button id="btn-stream" class="btn">ストリームグラフを生</button>
+                        <button id="btn-stream" class="btn">ストリームグラフを生成</button>
                         <div id="stream-chart" class="chart-container" style="margin-top: 0.8rem; min-height: 450px;"></div>
-                        <button class="btn btn-secondary" onclick="saveSnapshot('stream-chart', 'ストリームグラフ)" style="margin-top: 0.5rem;">スナップショットを保存</button>
+                        <button class="btn btn-secondary" onclick="saveSnapshot('stream-chart', 'ストリームグラフ')" style="margin-top: 0.5rem;">スナップショットを保存</button>
                     </div>
                 </div>
             </div>
@@ -2033,14 +2033,14 @@
                     
                     <div id="crew-tab-chord" class="tab-content">
                         <p style="color: #aaa; font-size: 0.9rem; margin-bottom: 1rem;">
-                            🎵 共同出願人・発明者の関係を美しいコード図hord Diagramで可視化します。                        </p>
+                            🎵 共同出願人・発明者の関係を美しいコード図（Chord Diagram）で可視化します。                        </p>
                         <div class="grid-2" style="margin-bottom: 0.8rem;">
                             <div class="form-group">
-                                <label>分タイド</label>
+                                <label>分析タイプ</label>
                                 <select id="chord-type">
                                     <option value="ipc" selected>IPC共起関係</option>
                                     <option value="applicant">共同出願人関係</option>
-                                    <option value="inventor">発明者ラト</option>
+                                    <option value="inventor">発明者ネットワーク</option>
                                 </select>
                             </div>
                             <div class="form-group">
@@ -2048,7 +2048,7 @@
                                 <input type="number" id="chord-count" value="15" min="5" max="30">
                             </div>
                         </div>
-                        <button id="btn-chord" class="btn">コーード図を生成</button>
+                        <button id="btn-chord" class="btn">コード図を生成</button>
                         <div id="chord-chart" class="chart-container" style="margin-top: 0.8rem; min-height: 550px;"></div>
                         <button class="btn btn-secondary" onclick="saveSnapshot('chord-chart', 'コード図')" style="margin-top: 0.5rem;">スナップショットを保存</button>
                     </div>
@@ -2068,7 +2068,7 @@
                     </div>
                     <div style="margin-bottom: 0.5rem; font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">高度な可視化</div>
                     <div class="tabs">
-                        <button class="tab-btn" onclick="showTab('mega', 'treemap')">チーマット</button>
+                        <button class="tab-btn" onclick="showTab('mega', 'treemap')">ツリーマップ</button>
                         <button class="tab-btn" onclick="showTab('mega', 'sankey')">サンキー図</button>
                         <button class="tab-btn" onclick="showTab('mega', 'radar')">レーダー</button>
                         <button class="tab-btn" onclick="showTab('mega', 'sunburst')">サンバスト</button>
@@ -2142,7 +2142,7 @@
                     </div>
                     
                     <div id="mega-tab-strategy" class="tab-content">
-                        <p style="margin-bottom: 0.8rem; font-size: 0.85rem;">出願人の成長玁シェアを析し、戦略ポジションを可視化します。/p>
+                        <p style="margin-bottom: 0.8rem; font-size: 0.85rem;">出願人の成長率とシェアを分析し、戦略ポジションを可視化します。</p>
                         <div class="grid-3">
                             <div class="form-group">
                                 <label>分対象企業数</label>
@@ -2155,8 +2155,8 @@
                             <div class="form-group">
                                 <label>バブルサイズ</label>
                                 <select id="strategy-size">
-                                    <option value="total">総願件数</option>
-                                    <option value="recent">直迁E年件数</option>
+                                    <option value="total">総出願件数</option>
+                                    <option value="recent">直近3年件数</option>
                                 </select>
                             </div>
                         </div>
@@ -2168,14 +2168,14 @@
                     
                     
                     <div id="mega-tab-treemap" class="tab-content">
-                        <p style="margin-bottom: 0.8rem; font-size: 0.85rem;">IPC分階層構造をツリーマップで可視化します。/p>
+                        <p style="margin-bottom: 0.8rem; font-size: 0.85rem;">IPC分類の階層構造をツリーマップで可視化します。</p>
                         <div class="grid-2">
                             <div class="form-group">
                                 <label>表示階層</label>
                                 <select id="treemap-level">
                                     <option value="section">セクション (A-H)</option>
-                                    <option value="class" selected>クラス (侁 G06)</option>
-                                    <option value="subclass">サブクラス (侁 G06F)</option>
+                                    <option value="class" selected>クラス (例: G06)</option>
+                                    <option value="subclass">サブクラス (例: G06F)</option>
                                 </select>
                             </div>
                             <div class="form-group">
@@ -2183,21 +2183,21 @@
                                 <select id="treemap-color">
                                     <option value="Viridis" selected>Viridis (グリーン系)</option>
                                     <option value="Sunset">Sunset (オレンジ系)</option>
-                                    <option value="Plasma">Plasma (パプル系)</option>
-                                    <option value="Turbo">Turbo (レインボ)</option>
+                                    <option value="Plasma">Plasma (パープル系)</option>
+                                    <option value="Turbo">Turbo (レインボー)</option>
                                     <option value="Cividis">Cividis (イエロー系)</option>
                                     <option value="Inferno">Inferno (暖色系)</option>
                                 </select>
                             </div>
                         </div>
-                        <button id="btn-treemap" class="btn">チーマップを生成</button>
+                        <button id="btn-treemap" class="btn">ツリーマップを生成</button>
                         <div id="treemap-chart" class="chart-container" style="margin-top: 0.8rem;"></div>
-                        <button class="btn btn-secondary" onclick="saveSnapshot('treemap-chart', 'IPCチーマップ)" style="margin-top: 0.5rem;">スナップショットを保存</button>
+                        <button class="btn btn-secondary" onclick="saveSnapshot('treemap-chart', 'IPCツリーマップ')" style="margin-top: 0.5rem;">スナップショットを保存</button>
                     </div>
                     
                     
                     <div id="mega-tab-sankey" class="tab-content">
-                        <p style="margin-bottom: 0.8rem; font-size: 0.85rem;">出願人と技術野！EPC/FI関係をインタラクチブなサンキー図で可視化します。/p>
+                        <p style="margin-bottom: 0.8rem; font-size: 0.85rem;">出願人と技術分野（IPC/FI）の関係をインタラクティブなサンキー図で可視化します。</p>
                         <div class="grid-3">
                             <div class="form-group">
                                 <label>出願人数</label>
@@ -2211,7 +2211,7 @@
                                 <label>カラースキーム</label>
                                 <select id="sankey-color">
                                     <option value="category" selected>カテゴリ別</option>
-                                    <option value="gradient">グラテション</option>
+                                    <option value="gradient">グラデーション</option>
                                 </select>
                             </div>
                         </div>
@@ -2222,32 +2222,32 @@
                     
                     
                     <div id="mega-tab-radar" class="tab-content">
-                        <p style="margin-bottom: 0.8rem; font-size: 0.85rem;">選択した企業の技術ートフォリオをレーダーチャートで比較します。/p>
+                        <p style="margin-bottom: 0.8rem; font-size: 0.85rem;">選択した企業の技術ポートフォリオをレーダーチャートで比較します。</p>
                         <div class="grid-2">
                             <div class="form-group">
-                                <label>比較業1</label>
+                                <label>比較企業1</label>
                                 <select id="radar-company1"></select>
                             </div>
                             <div class="form-group">
-                                <label>比較業2</label>
+                                <label>比較企業2</label>
                                 <select id="radar-company2"></select>
                             </div>
                         </div>
                         <div class="form-group">
-                            <label>比較 (IPC表示レベル)</label>
+                            <label>比較軸 (IPC表示レベル)</label>
                             <select id="radar-axis">
                                 <option value="section">セクション (A-H)</option>
                                 <option value="class" selected>クラス (TOP10)</option>
                             </select>
                         </div>
-                        <button id="btn-radar" class="btn">レーダーチャートを生</button>
+                        <button id="btn-radar" class="btn">レーダーチャートを生成</button>
                         <div id="radar-chart" class="chart-container" style="margin-top: 0.8rem;"></div>
-                        <button class="btn btn-secondary" onclick="saveSnapshot('radar-chart', 'レーダーチャート)" style="margin-top: 0.5rem;">スナップショットを保存</button>
+                        <button class="btn btn-secondary" onclick="saveSnapshot('radar-chart', 'レーダーチャート')" style="margin-top: 0.5rem;">スナップショットを保存</button>
                     </div>
                     
                     
                     <div id="mega-tab-sunburst" class="tab-content">
-                        <p style="margin-bottom: 0.8rem; font-size: 0.85rem;">IPC分階層構造を放封のサンバスト図で可視化します。クリックでズームイン/アウト、/p>
+                        <p style="margin-bottom: 0.8rem; font-size: 0.85rem;">IPC分類の階層構造を放射状のサンバースト図で可視化します。クリックでズームイン/アウト。</p>
                         <div class="grid-2">
                             <div class="form-group">
                                 <label>データ源</label>
@@ -2266,9 +2266,9 @@
                                 </select>
                             </div>
                         </div>
-                        <button id="btn-sunburst" class="btn">サンバストを生</button>
+                        <button id="btn-sunburst" class="btn">サンバーストを生成</button>
                         <div id="sunburst-chart" class="chart-container" style="margin-top: 0.8rem; min-height: 550px;"></div>
-                        <button class="btn btn-secondary" onclick="saveSnapshot('sunburst-chart', 'サンバスチ)" style="margin-top: 0.5rem;">スナップショットを保存</button>
+                        <button class="btn btn-secondary" onclick="saveSnapshot('sunburst-chart', 'サンバースト')" style="margin-top: 0.5rem;">スナップショットを保存</button>
                     </div>
                 </div>
             </div>
@@ -2278,13 +2278,13 @@
                 <div class="card">
                     <h2>アドバンスド可視化</h2>
                     <p style="margin-bottom: 1rem; color: #4fc3f7; font-size: 0.9rem;">
-                        PyScriptならではのインタラクチブな可視化機
+                        PyScriptならではのインタラクティブな可視化機能
                     </p>
                     
                     <div class="tabs">
                         <button class="tab-btn active" onclick="showTab('nova', 'bubble-race')">バブルレース</button>
                         <button class="tab-btn" onclick="showTab('nova', 'circle-pack')">サークルパック</button>
-                        <button class="tab-btn" onclick="showTab('nova', 'dendro')">チドログラム</button>
+                        <button class="tab-btn" onclick="showTab('nova', 'dendro')">デンドログラム</button>
                     </div>
                     
                     
@@ -2299,17 +2299,17 @@
                             <div class="form-group">
                                 <label>アニメーション速度</label>
                                 <select id="race-speed">
-                                    <option value="slow">めくり (1秒/年)</option>
-                                    <option value="normal" selected>普送(0.5私E年)</option>
-                                    <option value="fast">高送(0.25私E年)</option>
-                                    <option value="ultra">趁送(0.1私E年)</option>
+                                    <option value="slow">ゆっくり (1秒/年)</option>
+                                    <option value="normal" selected>普通 (0.5秒/年)</option>
+                                    <option value="fast">高速 (0.25秒/年)</option>
+                                    <option value="ultra">超高速 (0.1秒/年)</option>
                                 </select>
                             </div>
                         </div>
                         <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
                             <button id="btn-race-play" class="btn" onclick="window.bubbleRacePlay()">▶再生</button>
                             <button id="btn-race-pause" class="btn btn-secondary" onclick="window.bubbleRacePause()">⏸一時停止</button>
-                            <button id="btn-race-reset" class="btn btn-secondary" onclick="window.bubbleRaceReset()">⏮リセチ</button>
+                            <button id="btn-race-reset" class="btn btn-secondary" onclick="window.bubbleRaceReset()">⏮リセット</button>
                         </div>
                         <div id="race-year-display" style="text-align: center; font-size: 2rem; font-weight: bold; color: #4fc3f7; margin: 1rem 0;"></div>
                         <div id="race-chart" class="chart-container" style="min-height: 450px;"></div>
@@ -2339,7 +2339,7 @@
                             <div id="circle-detail-panel" style="flex: 1; min-width: 300px; max-height: 550px; overflow-y: auto; background: rgba(0,0,0,0.3); border-radius: 8px; padding: 1rem; display: none;">
                                 <h4 style="color: #4fc3f7; margin-bottom: 0.8rem; display: flex; align-items: center; gap: 0.5rem;">
                                     <span id="circle-detail-title">📋 案件リスト</span>
-                                    <button onclick="document.getElementById('circle-detail-panel').style.display='none';" style="margin-left: auto; background: none; border: none; color: #888; cursor: pointer; font-size: 1.2rem;">✁/button>
+                                    <button onclick="document.getElementById('circle-detail-panel').style.display='none';" style="margin-left: auto; background: none; border: none; color: #888; cursor: pointer; font-size: 1.2rem;">✖</button>
                                 </h4>
                                 <div id="circle-detail-content" style="font-size: 0.85rem;"></div>
                             </div>
@@ -2349,13 +2349,13 @@
                     
                     <div id="nova-tab-dendro" class="tab-content">
                         <p style="color: #aaa; font-size: 0.9rem; margin-bottom: 1rem;">
-                            🌿 階層色ラスタリングの結果をデンドログラム樹形図で可視化します。                        </p>
+                            🌿 階層的クラスタリングの結果をデンドログラム（樹形図）で可視化します。                        </p>
                         <div class="grid-2" style="margin-bottom: 0.8rem;">
                             <div class="form-group">
                                 <label>クラスタリング対象</label>
                                 <select id="dendro-target">
                                     <option value="applicant" selected>出願人技術類似度</option>
-                                    <option value="keyword">キーワード（起パターン</option>
+                                    <option value="keyword">キーワード共起パターン</option>
                                 </select>
                             </div>
                             <div class="form-group">
@@ -2366,14 +2366,14 @@
                         <div class="form-group" style="margin-bottom: 0.8rem;">
                             <label>距離計算方法</label>
                             <select id="dendro-method">
-                                <option value="ward" selected>Ward況</option>
-                                <option value="complete">Complete況</option>
-                                <option value="average">Average況</option>
+                                <option value="ward" selected>Ward法</option>
+                                <option value="complete">Complete法</option>
+                                <option value="average">Average法</option>
                             </select>
                         </div>
                         <button id="btn-dendro" class="btn">デンドログラムを生成</button>
                         <div id="dendro-chart" class="chart-container" style="margin-top: 0.8rem; min-height: 500px;"></div>
-                        <button class="btn btn-secondary" onclick="saveSnapshot('dendro-chart', 'チドログラム')" style="margin-top: 0.5rem;">スナップショットを保存</button>
+                        <button class="btn btn-secondary" onclick="saveSnapshot('dendro-chart', 'デンドログラム')" style="margin-top: 0.5rem;">スナップショットを保存</button>
                     </div>
                 </div>
             </div>
@@ -2381,29 +2381,29 @@
             
             <div id="page-export" class="page hidden">
                 <div class="card">
-                    <h2>エクスポト</h2>
-                    <p style="margin-bottom: 1rem;">分結果をエクスポトレポト生成できます、/p>
+                    <h2>エクスポート</h2>
+                    <p style="margin-bottom: 1rem;">分析結果をエクスポートしレポートを生成できます。</p>
                     <div class="grid-2">
-                        <button id="btn-export-summary" class="btn">統計サマリーをコピ</button>
-                        <button id="btn-export-keywords" class="btn">キーワードをコピ</button>
+                        <button id="btn-export-summary" class="btn">統計サマリーをコピー</button>
+                        <button id="btn-export-keywords" class="btn">キーワードをコピー</button>
                     </div>
                     <div class="grid-2" style="margin-top: 0.5rem;">
-                        <button id="btn-generate-report" class="btn">レポトを生</button>
-                        <button id="btn-export-all" class="btn">全データをエクスポト</button>
+                        <button id="btn-generate-report" class="btn">レポートを生成</button>
+                        <button id="btn-export-all" class="btn">全データをエクスポート</button>
                     </div>
                     <div id="export-result" style="margin-top: 1rem;"></div>
                     
                     <div id="report-output" style="margin-top: 1rem; display: none;">
-                        <h4>📋 自動生成レポチ/h4>
+                        <h4>📋 自動生成レポート</h4>
                         <textarea id="report-text" rows="15" style="width: 100%; background: rgba(0,0,0,0.3); color: #e0e1dd; border: 1px solid rgba(255,255,255,0.2); border-radius: 5px; padding: 0.5rem;"></textarea>
-                        <button class="btn btn-secondary" onclick="navigator.clipboard.writeText(document.getElementById('report-text').value); alert('コピしました');" style="margin-top: 0.3rem;">📋 レポトをコピ</button>
+                        <button class="btn btn-secondary" onclick="navigator.clipboard.writeText(document.getElementById('report-text').value); alert('コピーしました');" style="margin-top: 0.3rem;">📋 レポートをコピー</button>
                     </div>
                     
                     <div style="margin-top: 1.5rem;">
-                        <h4>📸 スナップショチギャラリー</h4>
-                        <p style="font-size: 0.85rem; color: #888; margin-bottom: 0.5rem;">チャート「スナップショチ保存」タンで画像を保存できます</p>
+                        <h4>📸 スナップショットギャラリー</h4>
+                        <p style="font-size: 0.85rem; color: #888; margin-bottom: 0.5rem;">チャートの「スナップショット保存」ボタンで画像を保存できます</p>
                         <div id="snapshot-gallery" style="margin-top: 0.5rem;">
-                            <p style="color: #888;">保存されたスナップショチはありません</p>
+                            <p style="color: #888;">保存されたスナップショットはありません</p>
                         </div>
                     </div>
                     
@@ -7693,7 +7693,7 @@ def core_run_classification(event):
 def core_reanalyze(event):
     global g_core_df_classified, g_core_rules, g_core_reanalyze_prompt
     if g_core_df_classified is None:
-        document.getElementById('core-reanalyze-output').innerHTML = '<div class="status-warn">分結果がありません</div>'
+        document.getElementById('core-reanalyze-output').innerHTML = '<div class="status-warn">分類結果がありません</div>'
         return
     if not ensure_sklearn():
         document.getElementById('core-reanalyze-output').innerHTML = '<div class="status-warn">追加モジュールを読み込み中です。しばらく不明て再実行してください。/div>'
@@ -8110,7 +8110,7 @@ def run_saturn(event):
             })
         
         layout = ChartHelper.create_layout(
-            title=f"技術ランドスケーチ({dim_method.upper()} + K-Means)",
+            title=f"技術ランドスケープ ({dim_method.upper()} + K-Means)",
             height=600,
             showlegend=True,
             legend={"orientation": "h", "y": -0.1}
@@ -8322,15 +8322,17 @@ def show_emerging(event):
         document.getElementById('emerging-chart').innerHTML = '<div class="status-warn">期間データがありません</div>'
         return
     
-    # TF-IDF合計を計算    old_tfidf = np.array(g_tfidf_matrix[old_idx].sum(axis=0)).flatten() / len(old_idx)
+    # TF-IDF合計を計算
+    old_tfidf = np.array(g_tfidf_matrix[old_idx].sum(axis=0)).flatten() / len(old_idx)
     new_tfidf = np.array(g_tfidf_matrix[new_idx].sum(axis=0)).flatten() / len(new_idx)
     
-    # 成長玁計算（新期間/旧期間 - 1    growth = np.zeros(len(g_feature_names))
+    # 成長率計算（新期間/旧期間 - 1）
+    growth = np.zeros(len(g_feature_names))
     for i in range(len(g_feature_names)):
         if old_tfidf[i] > 0.001:
             growth[i] = (new_tfidf[i] - old_tfidf[i]) / old_tfidf[i]
         elif new_tfidf[i] > 0.01:
-            growth[i] = 10  # 新出キーワーチ    
+            growth[i] = 10  # 新出キーワード    
     # 新期間で一定以上頻度があるもののみ
     valid_mask = new_tfidf > 0.005
     growth[~valid_mask] = -999
@@ -9078,7 +9080,7 @@ def show_strategy_matrix(event):
         
         # シェア        share = (total / total_count) * 100
         
-        # 直迁E年件数
+        # 直近3年件数
         recent = app_data[app_data['year'] >= max_year - 2]['count'].sum()
         
         # CAGR計算！Ease_year以剁Evs 以降！        old_period = app_data[app_data['year'] < base_year]['count'].sum()
@@ -9134,10 +9136,11 @@ def show_strategy_matrix(event):
             "opacity": 0.7,
             "line": {"width": 1, "color": "#fff"}
         },
-        "hovertemplate": "<b>%{text}</b><br>シェア: %{x:.1f}%<br>成長玁 %{y:.1f}%<extra></extra>"
+        "hovertemplate": "<b>%{text}</b><br>シェア: %{x:.1f}%<br>成長率: %{y:.1f}%<extra></extra>"
     }]
     
-    # 象限線    med_share = np.median([r['share'] for r in results])
+    # 象限線
+    med_share = np.median([r['share'] for r in results])
     shapes = [
         {"type": "line", "x0": med_share, "x1": med_share, "y0": -100, "y1": 200, 
          "line": {"color": "rgba(255,255,255,0.3)", "width": 1, "dash": "dot"}},
