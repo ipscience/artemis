@@ -2769,7 +2769,7 @@
             window.__heavyLoadStart = Date.now();
             
             const status = document.getElementById('bg-load-status');
-            
+            const startTime = Date.now();
             
             const updateElapsed = () => {
                 const sec = Math.floor((Date.now() - startTime) / 1000);
@@ -2797,6 +2797,7 @@
                     debugLog('[Heavy] Python function available, calling pyLoadHeavyPackages...');
                     clearInterval(window.__heavyElapsedTimer);
                     
+                    const pkgStartTime = Date.now();
                     window.__heavyElapsedTimer = setInterval(() => {
                         const sec = Math.floor((Date.now() - pkgStartTime) / 1000);
                         const min = Math.floor(sec / 60);
@@ -5460,11 +5461,13 @@
         window.drawWordCloud = drawWordCloud;
         window.drawForceNetwork = drawForceNetwork;
         window.drawAnimatedBarChart = drawAnimatedBarChart;
-        window.drawSankey = drawSankey;
-        window.drawStreamGraph = drawStreamGraph;
+        window.drawSankeyDiagram = drawSankeyDiagram;
+        window.drawStreamgraph = drawStreamgraph;
         window.drawDendrogram = drawDendrogram;
         window.drawChordDiagram = drawChordDiagram;
         window.drawSunburst = drawSunburst;
+        window.drawCirclePacking = drawCirclePacking;
+        window.drawBubbleRace = drawBubbleRace;
     </script>
 
     <script type="py" config='{"packages": ["pandas", "numpy"]}'>
