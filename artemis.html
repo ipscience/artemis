@@ -4422,6 +4422,7 @@
                 const innerWidth = width - margin.left - margin.right;
                 const innerHeight = height - margin.top - margin.bottom;
                 
+                const maxVal = d3.max(Object.values(data).flat(), d => d.value) || 100;
                 
                 const x = d3.scaleLinear()
                     .domain([0, maxVal * 1.1])
@@ -4944,6 +4945,8 @@
                 
                 const chords = chord(matrix);
                 
+                const maxLabelLength = 12;
+                
                 const color = d3.scaleOrdinal()
                     .domain(d3.range(names.length))
                     .range(d3.schemeTableau10);
@@ -5219,7 +5222,7 @@
                 
                 cluster(root);
                 
-                g.selectAll('.link')
+                const link = g.selectAll('.link')
                     .data(root.links())
                     .enter()
                     .append('path')
@@ -5235,7 +5238,7 @@
                         H${d.target.y}
                     `);
                 
-                const totalLength = link.node().getTotalLength();
+                const totalLength = link.node() ? link.node().getTotalLength() : 0;
                 link.attr('stroke-dasharray', totalLength)
                     .attr('stroke-dashoffset', totalLength)
                     .transition()
@@ -8179,9 +8182,10 @@ def show_keywords(event):
     traces = [ChartHelper.create_bar_trace(
         x=scores[::-1],
         y=words[::-1],
-        orientation="h"
+        orientation="h",
+        color=colors[0]
     )]
-    traces[0]["marker"]["color"] = colors[::-1]
+    traces[0]["marker"] = {"color": colors[::-1]}
     layout = ChartHelper.create_horizontal_bar_layout(
         title=f"キーワードランキング TOP{top_n}",
         x_title="",
@@ -9534,7 +9538,8 @@ def show_streamgraph(event):
             # その年のドキュメントTF-IDF値を集計
             year_indices = df[year_mask].index.tolist()
             if len(year_indices) > 0:
-                # tokenizedカラムでキーワード出現をカウント                for kw in top_items:
+                # tokenizedカラムでキーワード出現をカウント
+                for kw in top_items:
                     count = 0
                     for idx in year_indices:
                         if idx < len(df):
