@@ -1994,12 +1994,12 @@
                             <label>ネットワークタイプ</label>
                             <select id="network-type">
                                 <option value="applicant" selected>出願人ネットワーク</option>
-                                <option value="inventor">発明者チワーク</option>
+                                <option value="inventor">発明者ネットワーク</option>
                                 <option value="ipc">IPC共起ネットワーク</option>
                             </select>
                         </div>
                         <div class="form-group">
-                            <label>最小エチ重み</label>
+                            <label>最小エッジ重み</label>
                             <input type="number" id="min-edge" value="2" min="1" max="10">
                         </div>
                     </div>
@@ -2007,14 +2007,14 @@
                         <div class="form-group">
                             <label>抽出要素</label>
                             <select id="network-centrality">
-                                <option value="degree">次数中要</option>
-                                <option value="betweenness">媒介中要</option>
-                                <option value="closeness">近接中要</option>
-                                <option value="eigenvector">固有クトル中要</option>
+                                <option value="degree">次数中心性</option>
+                                <option value="betweenness">媒介中心性</option>
+                                <option value="closeness">近接中心性</option>
+                                <option value="eigenvector">固有ベクトル中心性</option>
                             </select>
                         </div>
                         <div class="form-group">
-                            <label>表示ノド数</label>
+                            <label>表示ノード数</label>
                             <input type="number" id="network-max-nodes" value="50" min="10" max="200">
                         </div>
                     </div>
@@ -2067,7 +2067,7 @@
                         <button class="tab-btn" onclick="showTab('mega', 'treemap')">ツリーマップ</button>
                         <button class="tab-btn" onclick="showTab('mega', 'sankey')">サンキー図</button>
                         <button class="tab-btn" onclick="showTab('mega', 'radar')">レーダー</button>
-                        <button class="tab-btn" onclick="showTab('mega', 'sunburst')">サンバスト</button>
+                        <button class="tab-btn" onclick="showTab('mega', 'sunburst')">サンバースト</button>
                     </div>
                     
                     <div id="mega-tab-wordcloud" class="tab-content active">
@@ -2090,7 +2090,7 @@
                         </div>
                         <button id="btn-wordcloud" class="btn">ワードクラウドを生成</button>
                         <div id="wordcloud-chart" class="chart-container" style="margin-top: 0.8rem;"></div>
-                        <button class="btn btn-secondary" onclick="saveSnapshot('wordcloud-chart', 'ワードクラウド)" style="margin-top: 0.5rem;">スナップショットを保存</button>
+                        <button class="btn btn-secondary" onclick="saveSnapshot('wordcloud-chart', 'ワードクラウド')" style="margin-top: 0.5rem;">スナップショットを保存</button>
                     </div>
                     
                     <div id="mega-tab-ngram" class="tab-content">
@@ -2119,7 +2119,7 @@
                                 <input type="number" id="cooccur-nodes" value="30" min="10" max="50">
                             </div>
                             <div class="form-group">
-                                <label>最小起数</label>
+                                <label>最小共起数</label>
                                 <input type="number" id="cooccur-min" value="3" min="1" max="10">
                             </div>
                         </div>
@@ -2141,11 +2141,11 @@
                         <p style="margin-bottom: 0.8rem; font-size: 0.85rem;">出願人の成長率とシェアを分析し、戦略ポジションを可視化します。</p>
                         <div class="grid-3">
                             <div class="form-group">
-                                <label>分対象企業数</label>
+                                <label>分析対象企業数</label>
                                 <input type="number" id="strategy-companies" value="15" min="5" max="30">
                             </div>
                             <div class="form-group">
-                                <label>基準年AGR計算方法</label>
+                                <label>基準年 (AGR計算用)</label>
                                 <input type="number" id="strategy-base-year" value="2018">
                             </div>
                             <div class="form-group">
@@ -2416,12 +2416,60 @@
     </div>
 
     <script>
+        /**
+         * ============================================================================
+         * ARTEMIS - JavaScript UI Engine
+         * ============================================================================
+         * 
+         * 概要:
+         *   ブラウザ上で動作する特許分析ツールのUIレイヤー。
+         *   PyScript (Pyodide) で実行されるPython分析エンジンと連携し、
+         *   Plotly.js / D3.js による可視化を提供する。
+         * 
+         * アーキテクチャ:
+         *   - 状態管理: window.appState オブジェクト
+         *   - Python連携: window.pyodide_globals / window.pyLoadHeavyPackages
+         *   - 可視化: drawChart(), drawWordCloud(), drawForceNetwork() など
+         * 
+         * 依存関係:
+         *   - Plotly.js 2.27.0
+         *   - D3.js v7 + d3-cloud + d3-sankey
+         *   - PapaParse 5.4.1
+         *   - PyScript 2024.1.1
+         * 
+         * ============================================================================
+         */
+
+        // ============================================================================
+        // 設定定数
+        // ============================================================================
+
+        /** @const {boolean} デバッグモードフラグ (本番環境では false) */
         const DEBUG = false;
+
+        /** @const {number} トースト通知のデフォルト表示時間 (ms) */
+        const TOAST_DURATION_DEFAULT = 3000;
+
+        /** @const {number} Python起動タイムアウト (秒) */
+        const PYTHON_INIT_TIMEOUT = 120;
+
+        /** @const {number} パッケージロード最大リトライ回数 */
+        const HEAVY_PACKAGE_MAX_RETRY = 60;
+
+        // ============================================================================
+        // アプリケーション状態
+        // ============================================================================
+
+        /** @type {HTMLElement|null} 現在表示中のページ要素 */
         let currentPage = null;
 
+        /**
+         * デバッグ用ログ出力
+         * @param {...*} args - 出力する値
+         */
         function debugLog(...args) {
             if (!DEBUG) return;
-            console.log(...args);
+            console.log('[ARTEMIS]', ...args);
         }
         window.__pyInitStart = Date.now();
         window.__pyInitTimer = setInterval(() => {
@@ -2450,10 +2498,25 @@
             }
         }, 1000);
 
+        // ============================================================================
+        // Quick Parse (Python起動前のCSV解析用)
+        // ============================================================================
+
+        /** @type {Object[]|null} PapaParse で解析された生CSVデータ */
         window.quickData = null;
+
+        /** @type {string[]} CSVのカラム名リスト */
         window.quickColumns = [];
+
+        /** @type {boolean} Quick Parse データが利用可能か */
         window.quickReady = false;
 
+        /**
+         * アプリケーションのグローバル状態
+         * @type {Object}
+         * @property {string} chartType - 現在選択中のチャートタイプ
+         * @property {Object.<string, boolean>} statusBreakdownByType - チャートタイプ別のステータス分類フラグ
+         */
         window.appState = {
             chartType: 'trend',
             statusBreakdownByType: {
@@ -2468,7 +2531,14 @@
             }
         };
 
-        
+        // ============================================================================
+        // UIコントロール関数
+        // ============================================================================
+
+        /**
+         * ATLASページのステータス分類チェックボックスの状態を同期
+         * チャートタイプに応じてチェックボックスの有効/無効を切り替える
+         */
         function syncAtlasStatusCheckbox() {
             const checkbox = document.getElementById('use-status-breakdown');
             if (!checkbox) return;
@@ -2514,7 +2584,10 @@
             if (treemapCtl) treemapCtl.style.display = window.appState.chartType === 'treemap' ? 'grid' : 'none';
         }
 
-        
+        /**
+         * ATLASページの入力要素にイベントリスナーをバインド
+         * 入力変更時に自動でチャートを再描画する
+         */
         function bindAtlasInputs() {
             const btn = document.getElementById('btn-atlas');
             if (!btn) return;
@@ -2545,6 +2618,10 @@
             }
         }
 
+        /**
+         * COREモジュールのフェーズ表示を同期
+         * 選択されたフェーズに応じてUIを切り替える
+         */
         function syncCorePhase() {
             const sel = document.getElementById('core-phase');
             if (!sel) return;
@@ -2573,9 +2650,20 @@
             }
         }
 
+        // ============================================================================
+        // Python連携
+        // ============================================================================
+
+        /** @type {boolean} Python環境が準備完了したか */
         window.__pyReady = false;
+
+        /** @type {boolean} Python起動前にLaunchボタンが押されたか (遅延実行用) */
         window.__pendingLaunch = false;
 
+        /**
+         * Python環境の準備状態を設定
+         * @param {boolean} isReady - Python環境が準備完了したか
+         */
         function setPyReady(isReady) {
             debugLog('[Init] setPyReady called with:', isReady);
             
@@ -2612,7 +2700,10 @@
             }
         }
 
-        
+        /**
+         * 重量パッケージ (scikit-learn, networkx) の準備状態を設定
+         * @param {boolean} isReady - パッケージが準備完了したか
+         */
         function setHeavyReady(isReady) {
             debugLog('[Heavy] setHeavyReady called with:', isReady);
             
@@ -2807,7 +2898,7 @@
                 clearInterval(window.__heavyElapsedTimer);
                 if (status) status.textContent = `追加モジュール: エラー`;
                 updateHeavyProgress('エラー', { 'scikit-learn': 'エラー', 'networkx': 'エラー' });
-                updateModuleProgress('core', `エラー: ${e.message || e}`, 0);
+                updateModuleProgress('core', `エラー: ${String(e.message || e).replace(/</g, '&lt;').replace(/>/g, '&gt;')}`, 0);
             }
         }
 
@@ -2829,10 +2920,11 @@
                         const info = document.getElementById('file-info');
                         if (info) info.textContent = `📂 ${file.name} (${window.quickData.length.toLocaleString()}件)`;
 
+                        const safeHtml = (str) => str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
                         const cols = ['(未選択)', ...window.quickColumns];
                         ['col-title','col-abstract','col-date','col-applicant','col-ipc','col-inventor','col-status'].forEach(id => {
                             const sel = document.getElementById(id);
-                            if (sel) sel.innerHTML = cols.map(c => `<option value="${c}">${c}</option>`).join('');
+                            if (sel) sel.innerHTML = cols.map(c => `<option value="${safeHtml(c)}">${safeHtml(c)}</option>`).join('');
                         });
 
                         const autoMap = {
@@ -2857,11 +2949,11 @@
                             const head = window.quickColumns.slice(0, 6);
                             let html = `<div class="status-ok">✅ ${window.quickData.length.toLocaleString()} 行読み込み完了（簡易）</div>`;
                             html += '<div style="overflow-x: auto; margin-top: 0.5rem;"><table class="data-table"><tr>';
-                            head.forEach(c => { html += `<th>${c}</th>`; });
+                            head.forEach(c => { html += `<th>${safeHtml(c)}</th>`; });
                             html += '</tr>';
                             window.quickData.slice(0, 3).forEach(row => {
                                 html += '<tr>';
-                                head.forEach(c => { html += `<td>${String(row[c] || '').slice(0, 25)}</td>`; });
+                                head.forEach(c => { html += `<td>${safeHtml(String(row[c] || '').slice(0, 25))}</td>`; });
                                 html += '</tr>';
                             });
                             html += '</table></div>';
@@ -3074,11 +3166,20 @@
                 return;
             }
 
-            document.getElementById('atlas-chart').innerHTML = '<div class="status-warn">こチャートPython起動後に利用できます</div>';
+            document.getElementById('atlas-chart').innerHTML = '<div class="status-warn">このチャートはPython起動後に利用できます</div>';
         }
 
-        
-        function showToast(message, type = 'info', duration = 3000) {
+        // ============================================================================
+        // 通知・フィードバック関数
+        // ============================================================================
+
+        /**
+         * トースト通知を表示
+         * @param {string} message - 表示するメッセージ
+         * @param {'info'|'success'|'warning'|'error'} [type='info'] - 通知タイプ
+         * @param {number} [duration=3000] - 表示時間 (ms)
+         */
+        function showToast(message, type = 'info', duration = TOAST_DURATION_DEFAULT) {
             let container = document.querySelector('.toast-container');
             if (!container) {
                 container = document.createElement('div');
@@ -3098,7 +3199,7 @@
             toast.innerHTML = `
                 <span class="toast-icon">${icons[type] || icons.info}</span>
                 <span class="toast-message">${message}</span>
-                <button class="toast-close" onclick="this.parentElement.remove()">Á/button>
+                <button class="toast-close" onclick="this.parentElement.remove()">×</button>
             `;
 
             container.appendChild(toast);
@@ -3109,14 +3210,26 @@
             }, duration);
         }
 
+        // ============================================================================
+        // CORE モジュール用イベントハンドラ
+        // ============================================================================
+
+        /**
+         * CORE分類ルールを削除
+         * @param {Event} event - クリックイベント
+         */
         window.coreDeleteRule = function (event) {
             const axis = event.target.getAttribute('data-axis');
             const name = event.target.getAttribute('data-name');
             if (axis && name) {
                 window.pyodide_globals.core_delete_rule(axis, name);
             }
-        }
+        };
 
+        /**
+         * CORE分類ルールを編集モードに切り替え
+         * @param {Event} event - クリックイベント
+         */
         window.coreEditRule = function (event) {
             const axis = event.target.getAttribute('data-axis');
             const name = event.target.getAttribute('data-name');
@@ -3131,8 +3244,16 @@
                 updBtn.style.display = 'inline-block';
             }
             if (cancelBtn) cancelBtn.style.display = 'inline-block';
-        }
-        
+        };
+
+        // ============================================================================
+        // ページナビゲーション
+        // ============================================================================
+
+        /**
+         * 指定されたページを表示
+         * @param {string} page - 表示するページのID (例: 'home', 'atlas', 'core')
+         */
         function showPage(page) {
             // すべてのページを隠す
             document.querySelectorAll('.page').forEach(p => {
@@ -3161,14 +3282,25 @@
                 }
             });
         }
-        
-        
+
+        /**
+         * クイックランチ (ホームページからの分析開始)
+         */
         function quickLaunch() {
             const btn = document.getElementById('btn-launch');
             if (btn) btn.click();
         }
-        
-        
+
+        // ============================================================================
+        // ダッシュボード関数
+        // ============================================================================
+
+        /**
+         * ダッシュボードの統計情報を更新
+         * @param {number} total - 総件数
+         * @param {string} years - 期間 (例: "2000-2024")
+         * @param {number} applicants - 出願人数
+         */
         function updateDashboardStats(total, years, applicants) {
             const elTotal = document.getElementById('home-stat-total');
             const elYears = document.getElementById('home-stat-years');
@@ -3178,8 +3310,14 @@
             if (elYears) elYears.textContent = years || '-';
             if (elApplicants) animateValue(elApplicants, 0, applicants, 800);
         }
-        
-        
+
+        /**
+         * 数値をアニメーション表示
+         * @param {HTMLElement} el - 対象要素
+         * @param {number} start - 開始値
+         * @param {number} end - 終了値
+         * @param {number} duration - アニメーション時間 (ms)
+         */
         function animateValue(el, start, end, duration) {
             if (!el || typeof end !== 'number') {
                 el.textContent = end?.toLocaleString() || '-';
@@ -3632,8 +3770,11 @@
                 });
             }
         }
-        
-        
+
+        /**
+         * ホームページのファイル読み込みステータスを更新
+         * @param {string} filename - 読み込んだファイル名
+         */
         function updateHomeFileStatus(filename) {
             const status = document.getElementById('home-file-status');
             const launchBtn = document.getElementById('home-launch-btn');
@@ -3644,8 +3785,12 @@
                 launchBtn.disabled = false;
             }
         }
-        
-        
+
+        /**
+         * タブを切り替え
+         * @param {string} page - ページID (例: 'mega', 'explorer')
+         * @param {string} tab - タブID (例: 'wordcloud', 'ngram')
+         */
         function showTab(page, tab) {
             const pageId = page === 'nova' ? 'advanced' : page;
             document.querySelectorAll('#page-' + pageId + ' .tab-content').forEach(t => t.classList.remove('active'));
@@ -3653,7 +3798,10 @@
             document.getElementById(page + '-tab-' + tab).classList.add('active');
             event.target.classList.add('active');
         }
-        
+        /**
+         * ATLASチャートタイプを切り替え
+         * @param {string} type - チャートタイプ (例: 'trend', 'applicant', 'ipc')
+         */
         function setAtlasChart(type) {
             const checkbox = document.getElementById('use-status-breakdown');
             if (checkbox && window.appState.statusBreakdownByType) {
@@ -3667,7 +3815,17 @@
             const btn = document.getElementById('btn-atlas');
             if (btn) btn.click();
         }
-        
+
+        // ============================================================================
+        // Plotly.js チャート描画
+        // ============================================================================
+
+        /**
+         * Plotly.jsでチャートを描画
+         * @param {string} divId - 描画先のコンテナ要素ID
+         * @param {string} dataJson - トレースデータのJSON文字列
+         * @param {string} layoutJson - レイアウト設定のJSON文字列
+         */
         function drawChart(divId, dataJson, layoutJson) {
             try {
                 const data = JSON.parse(dataJson);
@@ -3720,12 +3878,13 @@
                 console.error('Chart error:', e);
                 const container = document.getElementById(divId);
                 if (container) {
+                    const safeMsg = String(e.message || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
                     container.innerHTML = `
                         <div class="status-message error">
                             <span class="status-icon">⚠</span>
                             <div class="status-content">
                                 <div class="status-title">グラフ描画エラー</div>
-                                <div class="status-detail">${e.message}</div>
+                                <div class="status-detail">${safeMsg}</div>
                             </div>
                         </div>`;
                 }
@@ -3753,8 +3912,13 @@
                 }
             }
         }
-        
-        
+
+        /**
+         * チャートコンテナにローディングオーバーレイを表示/非表示
+         * @param {string} containerId - コンテナ要素ID
+         * @param {boolean} show - 表示する場合true
+         * @param {string} [message='読み込み中...'] - 表示するメッセージ
+         */
         function showChartLoading(containerId, show, message = '読み込み中...') {
             const container = document.getElementById(containerId);
             if (!container) return;
@@ -3778,8 +3942,14 @@
                 setTimeout(() => overlay.remove(), 300);
             }
         }
-        
-        
+
+        /**
+         * ステータスメッセージを表示
+         * @param {string} containerId - コンテナ要素ID
+         * @param {'error'|'warning'|'success'|'info'} type - メッセージタイプ
+         * @param {string} title - メッセージタイトル
+         * @param {string} [detail=''] - 詳細メッセージ
+         */
         function showStatusMessage(containerId, type, title, detail = '') {
             const icons = { error: '❌', warning: '⚠️', success: '✅', info: 'ℹ️' };
             const container = document.getElementById(containerId);
@@ -3794,8 +3964,17 @@
                     </div>
                 </div>`;
         }
-        
-        
+
+        // ─────────────────────────────────────────────────────────────
+        // D3.js ワードクラウド
+        // ─────────────────────────────────────────────────────────────
+
+        /**
+         * D3.js ワードクラウドを描画
+         * @param {string} divId - 描画先コンテナID
+         * @param {string} wordsJson - 単語データJSON [{text, score}, ...]
+         * @param {string} colorScheme - カラースキーム名
+         */
         function drawWordCloud(divId, wordsJson, colorScheme) {
             try {
                 const container = document.getElementById(divId);
@@ -3919,11 +4098,21 @@
                 
             } catch(e) {
                 console.error('WordCloud error:', e);
-                document.getElementById(divId).innerHTML = '<div class="status-err">ワードクラウドエラー: ' + e.message + '</div>';
+                document.getElementById(divId).innerHTML = '<div class="status-err">ワードクラウドエラー: ' + (e.message || '').replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</div>';
             }
         }
-        
-        
+
+        // ─────────────────────────────────────────────────────────────
+        // D3.js Force-Directed ネットワーク
+        // ─────────────────────────────────────────────────────────────
+
+        /**
+         * D3.js Force-Directed ネットワークを描画
+         * @param {string} divId - 描画先コンテナID
+         * @param {string} nodesJson - ノードデータJSON
+         * @param {string} linksJson - リンクデータJSON
+         * @param {string} title - グラフタイトル
+         */
         function drawForceNetwork(divId, nodesJson, linksJson, title) {
             try {
                 const container = document.getElementById(divId);
@@ -4030,7 +4219,7 @@
                         .style('z-index', '1000')
                         .html(`<strong style="font-size:15px;color:#4fc3f7;">${d.label}</strong><br>
                                <span style="color:#aaa;">次数:</span> ${d.degree}<br>
-                               <span style="color:#aaa;">中要:</span> ${d.centrality.toFixed(3)}`);
+                               <span style="color:#aaa;">中心性:</span> ${d.centrality.toFixed(3)}`);
                 })
                 .on('mouseout', function(event, d) {
                     d3.select(this).select('circle')
@@ -4073,11 +4262,21 @@
                 
             } catch(e) {
                 console.error('Network error:', e);
-                document.getElementById(divId).innerHTML = '<div class="status-err">ネットワークエラー: ' + e.message + '</div>';
+                document.getElementById(divId).innerHTML = '<div class="status-err">ネットワークエラー: ' + (e.message || '').replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</div>';
             }
         }
-        
-        
+
+        // ─────────────────────────────────────────────────────────────
+        // D3.js アニメーション付き横棒グラフ
+        // ─────────────────────────────────────────────────────────────
+
+        /**
+         * D3.js アニメーション付き横棒グラフを描画
+         * @param {string} divId - 描画先コンテナID
+         * @param {string} dataJson - データJSON [{label, value}, ...]
+         * @param {string} title - グラフタイトル
+         * @param {string} colorScheme - カラースキーム名
+         */
         function drawAnimatedBarChart(divId, dataJson, title, colorScheme) {
             try {
                 const container = document.getElementById(divId);
@@ -4205,11 +4404,20 @@
                 
             } catch(e) {
                 console.error('BarChart error:', e);
-                document.getElementById(divId).innerHTML = '<div class="status-err">グラフエラー: ' + e.message + '</div>';
+                document.getElementById(divId).innerHTML = '<div class="status-err">グラフエラー: ' + (e.message || '').replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</div>';
             }
         }
-        
-        
+
+        // ─────────────────────────────────────────────────────────────
+        // D3.js Sankey ダイアグラム
+        // ─────────────────────────────────────────────────────────────
+
+        /**
+         * D3.js Sankey ダイアグラムを描画
+         * @param {string} divId - 描画先コンテナID
+         * @param {string} dataJson - フローデータJSON {nodes, links}
+         * @param {string} colorScheme - カラースキーム名
+         */
         function drawSankeyDiagram(divId, dataJson, colorScheme) {
             const container = document.getElementById(divId);
             if (!container) {
@@ -4345,13 +4553,18 @@
                 
             } catch(e) {
                 console.error('Sankey error:', e);
-                container.innerHTML = '<div class="status-err">サンキー図エラー: ' + e.message + '</div>';
+                container.innerHTML = '<div class="status-err">サンキー図エラー: ' + (e.message || '').replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</div>';
             }
         }
-        
-        
+
+        // ─────────────────────────────────────────────────────────────
+        // D3.js バブルレースチャート
+        // ─────────────────────────────────────────────────────────────
+
+        /** @type {{running: boolean, timer: number|null, yearIndex: number, initialized: boolean}} */
         window.bubbleRaceState = { running: false, timer: null, yearIndex: 0, initialized: false };
-        
+
+        /** バブルレースの再生を開始 */
         window.bubbleRacePlay = function() {
             const btn = document.getElementById('btn-race-play');
             if (!window.bubbleRaceState.initialized) {
@@ -4366,9 +4579,19 @@
             }
             window._bubbleRacePlayInternal();
         };
+
+        /** バブルレースを一時停止 */
         window.bubbleRacePause = function() { debugLog('BubbleRace not initialized yet'); };
+
+        /** バブルレースをリセット */
         window.bubbleRaceReset = function() { debugLog('BubbleRace not initialized yet'); };
-        
+
+        /**
+         * バブルレースチャートを描画
+         * @param {string} divId - 描画先コンテナID
+         * @param {string} dataJson - 年ごとのデータJSON
+         * @param {number} speed - アニメーション速度 (ms)
+         */
         function drawBubbleRace(divId, dataJson, speed) {
             const container = document.getElementById(divId);
             const yearDisplay = document.getElementById('race-year-display');
@@ -4545,11 +4768,19 @@
                 
             } catch(e) {
                 console.error('BubbleRace error:', e);
-                container.innerHTML = '<div class="status-err">バブルレースエラー: ' + e.message + '</div>';
+                container.innerHTML = '<div class="status-err">バブルレースエラー: ' + (e.message || '').replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</div>';
             }
         }
-        
-        
+
+        // ─────────────────────────────────────────────────────────────
+        // D3.js Circle Packing (円充填図)
+        // ─────────────────────────────────────────────────────────────
+
+        /**
+         * Circle Packing (円充填図) を描画
+         * @param {string} divId - 描画先コンテナID
+         * @param {string} dataJson - 階層データJSON
+         */
         function drawCirclePacking(divId, dataJson) {
             const container = document.getElementById(divId);
             if (!container) return;
@@ -4691,7 +4922,7 @@
                 
             } catch(e) {
                 console.error('CirclePacking error:', e);
-                container.innerHTML = '<div class="status-err">サークルパックエラー: ' + e.message + '</div>';
+                container.innerHTML = '<div class="status-err">サークルパックエラー: ' + (e.message || '').replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</div>';
             }
         }
         
@@ -4756,8 +4987,17 @@
             
             panel.style.display = 'block';
         }
-        
-        
+
+        // ─────────────────────────────────────────────────────────────
+        // D3.js Sunburst (サンバースト図)
+        // ─────────────────────────────────────────────────────────────
+
+        /**
+         * Sunburst (サンバースト図) を描画
+         * @param {string} divId - 描画先コンテナID
+         * @param {string} dataJson - 階層データJSON
+         * @param {string} colorScheme - カラースキーム名
+         */
         function drawSunburst(divId, dataJson, colorScheme) {
             const container = document.getElementById(divId);
             if (!container) return;
@@ -4887,11 +5127,19 @@
                 
             } catch(e) {
                 console.error('Sunburst error:', e);
-                container.innerHTML = '<div class="status-err">サンバストエラー: ' + e.message + '</div>';
+                container.innerHTML = '<div class="status-err">サンバーストエラー: ' + (e.message || '').replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</div>';
             }
         }
-        
-        
+
+        // ─────────────────────────────────────────────────────────────
+        // D3.js Chord Diagram (弦図)
+        // ─────────────────────────────────────────────────────────────
+
+        /**
+         * Chord Diagram (弦図) を描画
+         * @param {string} divId - 描画先コンテナID
+         * @param {string} dataJson - 共起マトリクスデータJSON
+         */
         function drawChordDiagram(divId, dataJson) {
             const container = document.getElementById(divId);
             if (!container) return;
@@ -5021,7 +5269,7 @@
                             .style('font-size', '12px')
                             .style('pointer-events', 'none')
                             .style('z-index', '9999')
-                            .html(`<strong>${names[d.source.index]}</strong> ↁ<strong>${names[d.target.index]}</strong><br/>共起: ${d.source.value}件`)
+                            .html(`<strong>${names[d.source.index]}</strong> ↔ <strong>${names[d.target.index]}</strong><br/>共起: ${d.source.value}件`)
                             .style('left', (event.pageX + 15) + 'px')
                             .style('top', (event.pageY - 10) + 'px');
                     })
@@ -5034,11 +5282,19 @@
                 
             } catch(e) {
                 console.error('ChordDiagram error:', e);
-                container.innerHTML = '<div class="status-err">コード図エラー: ' + e.message + '</div>';
+                container.innerHTML = '<div class="status-err">コード図エラー: ' + (e.message || '').replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</div>';
             }
         }
-        
-        
+
+        // ─────────────────────────────────────────────────────────────
+        // D3.js Streamgraph (ストリームグラフ)
+        // ─────────────────────────────────────────────────────────────
+
+        /**
+         * Streamgraph (ストリームグラフ) を描画
+         * @param {string} divId - 描画先コンテナID
+         * @param {string} dataJson - 時系列データJSON
+         */
         function drawStreamgraph(divId, dataJson) {
             const container = document.getElementById(divId);
             if (!container) return;
@@ -5165,11 +5421,19 @@
                 
             } catch(e) {
                 console.error('Streamgraph error:', e);
-                container.innerHTML = '<div class="status-err">ストリームグラフエラー: ' + e.message + '</div>';
+                container.innerHTML = '<div class="status-err">ストリームグラフエラー: ' + (e.message || '').replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</div>';
             }
         }
-        
-        
+
+        // ─────────────────────────────────────────────────────────────
+        // D3.js Dendrogram (デンドログラム)
+        // ─────────────────────────────────────────────────────────────
+
+        /**
+         * Dendrogram (デンドログラム) を描画
+         * @param {string} divId - 描画先コンテナID
+         * @param {string} dataJson - 階層クラスタリングデータJSON
+         */
         function drawDendrogram(divId, dataJson) {
             const container = document.getElementById(divId);
             if (!container) return;
@@ -5260,13 +5524,22 @@
                 
             } catch(e) {
                 console.error('Dendrogram error:', e);
-                container.innerHTML = '<div class="status-err">チドログラムエラー: ' + e.message + '</div>';
+                container.innerHTML = '<div class="status-err">デンドログラムエラー: ' + (e.message || '').replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</div>';
             }
         }
-        
+
+        // ─────────────────────────────────────────────────────────────
+        // スナップショット機能
+        // ─────────────────────────────────────────────────────────────
+
+        /** @type {Array<{id: number, name: string, timestamp: string, dataUrl: string}>} */
         window.snapshotList = [];
-        
-        
+
+        /**
+         * チャートをスナップショットとして保存
+         * @param {string} chartId - チャートコンテナのID
+         * @param {string} chartName - スナップショット名
+         */
         function saveSnapshot(chartId, chartName) {
             const chartDiv = document.getElementById(chartId);
             if (!chartDiv) {
@@ -5311,21 +5584,25 @@
                     
                     img.onerror = function() {
                         console.error('SVG to PNG conversion failed');
-                        alert('スナップショチ保存に失敗しました');
+                        alert('スナップショット保存に失敗しました');
                     };
                     
                     img.src = URL.createObjectURL(svgBlob);
                 } catch(e) {
                     console.error('SVG snapshot error:', e);
-                    alert('スナップショチ保存に失敗しました');
+                    alert('スナップショット保存に失敗しました');
                 }
                 return;
             }
             
             alert('保存するチャートがありません');
         }
-        
-        
+
+        /**
+         * スナップショットをギャラリーに追加
+         * @param {string} chartName - チャート名
+         * @param {string} dataUrl - Base64エンコードされた画像URL
+         */
         function addSnapshotToGallery(chartName, dataUrl) {
             const timestamp = new Date().toLocaleString('ja-JP');
             const snapshot = {
@@ -5338,13 +5615,14 @@
             updateSnapshotGallery();
             alert(`📸 スナップショットを保存しました: ${chartName}`);
         }
-        
+
+        /** スナップショットギャラリーの表示を更新 */
         function updateSnapshotGallery() {
             const gallery = document.getElementById('snapshot-gallery');
             if (!gallery) return;
             
             if (window.snapshotList.length === 0) {
-                gallery.innerHTML = '<p style="color: #888;">保存されたスナップショチはありません</p>';
+                gallery.innerHTML = '<p style="color: #888;">保存されたスナップショットはありません</p>';
                 return;
             }
             
@@ -5356,7 +5634,7 @@
                         <div style="margin-top: 0.3rem; font-size: 0.8rem;">
                             <div style="font-weight: bold;">${snap.name}</div>
                             <div style="color: #888;">${snap.timestamp}</div>
-                            <button class="btn btn-small" onclick="downloadSnapshot(${snap.id})" style="margin-top: 0.3rem; font-size: 0.75rem; padding: 0.2rem 0.5rem;">ダウンロート</button>
+                            <button class="btn btn-small" onclick="downloadSnapshot(${snap.id})" style="margin-top: 0.3rem; font-size: 0.75rem; padding: 0.2rem 0.5rem;">ダウンロード</button>
                             <button class="btn btn-small btn-danger" onclick="deleteSnapshot(${snap.id})" style="margin-top: 0.3rem; font-size: 0.75rem; padding: 0.2rem 0.5rem;">削除</button>
                         </div>
                     </div>
@@ -5365,7 +5643,11 @@
             html += '</div>';
             gallery.innerHTML = html;
         }
-        
+
+        /**
+         * スナップショットをダウンロード
+         * @param {number} id - スナップショットID
+         */
         function downloadSnapshot(id) {
             const snap = window.snapshotList.find(s => s.id === id);
             if (!snap) return;
@@ -5375,15 +5657,27 @@
             link.download = `ARTEMIS_${snap.name}_${new Date().toISOString().slice(0,10)}.png`;
             link.click();
         }
-        
+
+        /**
+         * スナップショットを削除
+         * @param {number} id - スナップショットID
+         */
         function deleteSnapshot(id) {
             window.snapshotList = window.snapshotList.filter(s => s.id !== id);
             updateSnapshotGallery();
         }
-        
+
+        /**
+         * 進捗バーを更新
+         * @param {number} pct - 進捗パーセンテージ (0-100)
+         */
         function updateProgress(pct) {
             document.getElementById('launch-progress-fill').style.width = pct + '%';
         }
+
+        // ─────────────────────────────────────────────────────────────
+        // 初期化処理
+        // ─────────────────────────────────────────────────────────────
 
         bindAtlasInputs();
         // requestHeavyPackages is called from setPyReady(true) when Python is ready
@@ -5403,7 +5697,7 @@
                 if (!window.__pyReady) {
                     window.__pendingLaunch = true;
                     const status = document.getElementById('launch-status');
-                    if (status) status.innerHTML = '<div class="status-warn">Python起動中です。起動後に自動で分析エンジンを開始します。/div>';
+                    if (status) status.innerHTML = '<div class="status-warn">Python起動中です。起動後に自動で分析エンジンを開始します。</div>';
                 }
             });
         }
@@ -5507,7 +5801,9 @@ warnings.filterwarnings('ignore', category=RuntimeWarning)
 # ============================================================
 import re
 import json
+import html
 import unicodedata
+import functools
 from collections import Counter
 
 # ============================================================
@@ -5544,10 +5840,11 @@ def updateProgress(percent):
         window.updateProgress(percent)
 
 # ============================================================
-# 遁読み込みの重量パッケージ (scikit-learn, networkx)
+# ============================================================
+# 遅延読み込みの重量パッケージ (scikit-learn, networkx)
 # ============================================================
 
-# micropip経由で非同期に読み込まれるため、期値はNone
+# micropip経由で非同期に読み込まれるため、初期値はNone
 TfidfVectorizer = None
 PCA = None
 TruncatedSVD = None
@@ -5630,41 +5927,57 @@ def start_heavy_load():
 window.pyLoadHeavyPackages = create_proxy(start_heavy_load)
 
 # ============================================================
-# カラーパレット
+# 定数クラス
 # ============================================================
 
-# ステータス別チャート用のパステルパレット
-PASTEL_PALETTE = [
-    "#AEC6CF",  # パステルブルー
-    "#779ECB",  # 濁パステルブルー
-    "#B39EB5",  # パステルパープル
-    "#FFB7B2",  # パステルレッド (ソフト)
-    "#CFCFC4",  # パステルグレー
-    "#B0E0E6",  # パウダーブルー
-    "#FFDAC1",  # パステルピーチ
-    "#E2F0CB",  # パステルグリーン
-    "#FDFD96",  # パステルイエロー
-    "#FF6961",  # パステルレッド (濁)
-]
+class Config:
+    """アプリケーション設定定数"""
+    # データ処理
+    MAX_PREVIEW_ROWS = 20
+    MAX_APPLICANT_NAME_LEN = 25
+    MAX_TOP_APPLICANTS = 10
+    MAX_TOP_KEYWORDS = 20
+    MAX_TFIDF_FEATURES = 5000
+    
+    # チャート
+    DEFAULT_CHART_HEIGHT = 500
+    DEFAULT_CHART_MARGIN = {"t": 50, "b": 50, "l": 60, "r": 40}
+    TREEMAP_MAX_ITEMS = 50
+    
+    # クラスタリング
+    DEFAULT_N_CLUSTERS = 8
+    TSNE_PERPLEXITY = 30
+    
+    # ネットワーク
+    MAX_NETWORK_NODES = 100
+    MIN_EDGE_WEIGHT = 2
 
-# チャート用のメインカラーシーケンス
-COLOR_SEQUENCE = [
-    "#4fc3f7",  # Cyan
-    "#81c784",  # Green
-    "#ffb74d",  # Orange
-    "#ce93d8",  # Purple
-    "#ef5350",  # Red
-    "#26a69a",  # Teal
-    "#ffa726",  # Amber
-    "#42a5f5",  # Blue
-    "#ab47bc",  # Deep Purple
-    "#ec407a",  # Pink
-    "#7e57c2",  # Violet
-    "#5c6bc0",  # Indigo
-    "#29b6f6",  # Light Blue
-    "#26c6da",  # Cyan Light
-    "#66bb6a",  # Light Green
-]
+
+class Colors:
+    """カラーパレット定義"""
+    # ステータス別チャート用のパステルパレット
+    PASTEL = (
+        "#AEC6CF", "#779ECB", "#B39EB5", "#FFB7B2", "#CFCFC4",
+        "#B0E0E6", "#FFDAC1", "#E2F0CB", "#FDFD96", "#FF6961",
+    )
+    
+    # チャート用のメインカラーシーケンス
+    SEQUENCE = (
+        "#4fc3f7", "#81c784", "#ffb74d", "#ce93d8", "#ef5350",
+        "#26a69a", "#ffa726", "#42a5f5", "#ab47bc", "#ec407a",
+        "#7e57c2", "#5c6bc0", "#29b6f6", "#26c6da", "#66bb6a",
+    )
+    
+    # ステータス表示用
+    SUCCESS = "#81c784"
+    WARNING = "#ffb74d"
+    ERROR = "#ef5350"
+    INFO = "#4fc3f7"
+
+
+# 後方互換性のためのエイリアス
+PASTEL_PALETTE = list(Colors.PASTEL)
+COLOR_SEQUENCE = list(Colors.SEQUENCE)
 
 # ============================================================
 # 日本語ストップワード
@@ -5959,6 +6272,17 @@ class AppState:
     def has_tfidf(cls) -> bool:
         """TF-IDF行列が計算済みか。"""
         return cls.tfidf_matrix is not None
+    
+    @classmethod
+    def has_core_classified(cls) -> bool:
+        """CORE分類が完了しているか。"""
+        return cls.core_df_classified is not None
+    
+    @classmethod
+    def get_col(cls, key: str, default: str = None) -> str:
+        """カラムマッピングから値を取得。"""
+        val = cls.col_map.get(key, default)
+        return val if val and val != '(未選択)' else default
 
 # ============================================================
 # チャート描画ヘルパー
@@ -6144,6 +6468,28 @@ class UIHelper:
     def show_info(container_id: str, title: str, detail: str = ''):
         """情報メッセージを表示"""
         UIHelper.show_status(container_id, 'info', title, detail)
+    
+    @staticmethod
+    def set_html(container_id: str, content: str):
+        """コンテナのinnerHTMLを設定"""
+        el = document.getElementById(container_id)
+        if el:
+            el.innerHTML = content
+    
+    @staticmethod
+    def warn_html(container_id: str, message: str):
+        """警告メッセージHTMLを直接設定"""
+        UIHelper.set_html(container_id, f'<div class="status-warn">{html.escape(message)}</div>')
+    
+    @staticmethod
+    def error_html(container_id: str, message: str):
+        """エラーメッセージHTMLを直接設定"""
+        UIHelper.set_html(container_id, f'<div class="status-err">{html.escape(message)}</div>')
+    
+    @staticmethod
+    def info_html(container_id: str, message: str):
+        """情報メッセージHTMLを直接設定"""
+        UIHelper.set_html(container_id, f'<div class="status-info">{html.escape(message)}</div>')
 
 # ============================================================
 # データ処理のヘルパー関数
@@ -6159,10 +6505,9 @@ def get_filtered_df(year_filter: bool = True) -> pd.DataFrame | None:
     Returns:
         フィルタリング済みDataFrame、またはデータがない場合None
     """
-    global g_df_processed
-    if g_df_processed is None:
+    if not AppState.has_data():
         return None
-    df = g_df_processed
+    df = AppState.df_processed
     if year_filter:
         start = int(document.getElementById('year-start').value)
         end = int(document.getElementById('year-end').value)
@@ -6180,8 +6525,7 @@ def require_data(chart_id: str = None, message: str = 'データがありませ�
     Returns:
         データが存在すればTrue、なければFalse
     """
-    global g_df_processed
-    if g_df_processed is None:
+    if not AppState.has_data():
         if chart_id:
             UIHelper.show_warning(chart_id, message, '先にデータをインポートしてください')
         return False
@@ -6189,12 +6533,58 @@ def require_data(chart_id: str = None, message: str = 'データがありませ�
 
 def require_tfidf(chart_id: str = None) -> bool:
     """TF-IDF処理完了確認"""
-    global g_df_processed, g_tfidf_matrix
-    if g_df_processed is None or g_tfidf_matrix is None:
+    if not AppState.has_data() or not AppState.has_tfidf():
         if chart_id:
             UIHelper.show_warning(chart_id, 'TF-IDF未処理', '先にデータをインポートしてください')
         return False
     return True
+
+def require_core_classified(chart_id: str = None, message: str = '分類結果がありません') -> bool:
+    """CORE分類済みデータの存在確認"""
+    if not AppState.has_core_classified():
+        if chart_id:
+            UIHelper.show_warning(chart_id, message, '先に分類を実行してください')
+        return False
+    return True
+
+def _create_guard_decorator(check_fn, chart_id: str, message: str):
+    """
+    汎用ガードデコレータファクトリ。
+    
+    Args:
+        check_fn: 条件チェック関数 (chart_id, message) -> bool
+        chart_id: エラー表示先のコンテナID
+        message: 表示するエラーメッセージ
+    
+    Returns:
+        デコレータ関数
+    """
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            if not check_fn(chart_id, message):
+                return
+            return func(*args, **kwargs)
+        return wrapper
+    return decorator
+
+def ensure_data(chart_id: str = None, message: str = 'データがありません'):
+    """データの存在を確認するデコレータ。"""
+    return _create_guard_decorator(
+        lambda cid, msg: require_data(cid, msg), chart_id, message
+    )
+
+def ensure_tfidf(chart_id: str = None, message: str = 'TF-IDF未処理'):
+    """TF-IDFデータの存在を確認するデコレータ。"""
+    return _create_guard_decorator(
+        lambda cid, msg: require_tfidf(cid), chart_id, message
+    )
+
+def ensure_core_classified(chart_id: str = None, message: str = '分類結果がありません'):
+    """CORE分類済みデータの存在を確認するデコレータ。"""
+    return _create_guard_decorator(
+        lambda cid, msg: require_core_classified(cid, msg), chart_id, message
+    )
 
 def get_top_applicants(df: pd.DataFrame, n: int = 10) -> list:
     """上位N出願人を取得"""
@@ -6268,7 +6658,6 @@ async def on_file_change(event):
     Args:
         event: JavaScriptのファイル入力changeイベント
     """
-    global g_df
     files = event.target.files
     if files.length == 0:
         return
@@ -6282,31 +6671,37 @@ async def on_file_change(event):
         # Try UTF-8 first, then Shift-JIS for Japanese files
         try:
             df = pd.read_csv(StringIO(content), dtype=str)
-        except:
+        except UnicodeDecodeError:
             df = pd.read_csv(StringIO(content), dtype=str, encoding='shift_jis')
         
+        # Update AppState (primary) and global (for backward compatibility)
+        AppState.df = df
+        global g_df
         g_df = df
         
         # Show preview table
         preview = document.getElementById('preview-area')
-        html = f'<div class="status-ok">✅ {len(df):,} 行読み込み</div>'
-        html += '<div style="overflow-x: auto; margin-top: 0.5rem;"><table class="data-table"><tr>'
+        html_str = f'<div class="status-ok">✅ {len(df):,} 行読み込み</div>'
+        html_str += '<div style="overflow-x: auto; margin-top: 0.5rem;"><table class="data-table"><tr>'
         for c in list(df.columns)[:6]:
-            html += f'<th>{c}</th>'
-        html += '</tr>'
+            html_str += f'<th>{html.escape(str(c))}</th>'
+        html_str += '</tr>'
         for _, row in df.head(3).iterrows():
-            html += '<tr>'
+            html_str += '<tr>'
             for c in list(df.columns)[:6]:
-                html += f'<td>{str(row[c])[:25]}</td>'
-            html += '</tr>'
-        html += '</table></div>'
-        preview.innerHTML = html
+                html_str += f'<td>{html.escape(str(row[c])[:25])}</td>'
+            html_str += '</tr>'
+        html_str += '</table></div>'
+        preview.innerHTML = html_str
         
         # Populate column selectors
         cols = ['(未選択)'] + list(df.columns)
         for sel_id in ['col-title', 'col-abstract', 'col-date', 'col-applicant', 'col-ipc', 'col-inventor', 'col-status']:
             sel = document.getElementById(sel_id)
-            sel.innerHTML = ''.join(f'<option value="{c}">{c}</option>' for c in cols)
+            if sel:
+                # Prevent XSS in option values and text
+                opts = ''.join(f'<option value="{html.escape(str(c))}">{html.escape(str(c))}</option>' for c in cols)
+                sel.innerHTML = opts
         
         # Auto-map columns based on common naming patterns
         auto_map = {
@@ -6333,7 +6728,7 @@ async def on_file_change(event):
         document.getElementById('file-info').textContent = f'📂 {file.name} ({len(df):,}件)'
         
     except Exception as e:
-        document.getElementById('preview-area').innerHTML = f'<div class="status-err">❌{str(e)}</div>'
+        document.getElementById('preview-area').innerHTML = f'<div class="status-err">❌{html.escape(str(e))}</div>'
 
 # ============================================================
 # 分析エンジン初期化
@@ -6353,24 +6748,28 @@ def launch_engine(event):
     Args:
         event: ボタンクリックイベント
     """
+    # AppState を優先使用しつつ、後方互換性のためグローバル変数も更新
     global g_df, g_df_processed, g_col_map, g_tfidf_matrix
-    global g_vectorizer, g_feature_names, g_status_colors
+    global g_vectorizer, g_feature_names, g_status_colors, g_status_order
     
-    if g_df is None:
+    if AppState.df is None and g_df is None:
         document.getElementById('launch-status').innerHTML = (
             '<div class="status-err">先にデータをインポートしてください</div>'
         )
         return
     
+    # AppStateから読み込み（フォールバックでグローバル変数）
+    source_df = AppState.df if AppState.df is not None else g_df
+    
     document.getElementById('launch-progress').style.display = 'block'
     status = document.getElementById('launch-status')
     
     try:
-        df = g_df.copy()
+        df = source_df.copy()
         updateProgress(5)
         
         # Read column mapping from UI
-        g_col_map = {
+        col_map = {
             'title': document.getElementById('col-title').value,
             'abstract': document.getElementById('col-abstract').value,
             'date': document.getElementById('col-date').value,
@@ -6379,7 +6778,10 @@ def launch_engine(event):
             'inventor': document.getElementById('col-inventor').value,
             'status': document.getElementById('col-status').value
         }
-        cm = g_col_map
+        # Update both AppState and global for backward compatibility
+        AppState.col_map = col_map
+        g_col_map = col_map
+        cm = col_map
         
         status.innerHTML = '<div>📅 日付を処理...</div>'
         updateProgress(15)
@@ -6420,17 +6822,25 @@ def launch_engine(event):
         if cm['status'] and cm['status'] != '(未選択)':
             status_series = df[cm['status']].apply(normalize_status)
             df['_status'] = status_series
-            g_col_map['status_norm'] = '_status'
+            col_map['status_norm'] = '_status'
             unique_statuses = sorted(status_series.unique())
-            g_status_colors = {
+            status_colors = {
                 s: PASTEL_PALETTE[i % len(PASTEL_PALETTE)]
                 for i, s in enumerate(unique_statuses)
             }
-            g_status_order = unique_statuses
+            status_order = unique_statuses
         else:
-            g_status_colors = {}
-            g_col_map['status_norm'] = None
-            g_status_order = []
+            status_colors = {}
+            col_map['status_norm'] = None
+            status_order = []
+        
+        # Sync to AppState and globals
+        AppState.status_colors = status_colors
+        AppState.status_order = status_order
+        AppState.col_map = col_map
+        g_col_map = col_map
+        g_status_colors = status_colors
+        g_status_order = status_order
         
         status.innerHTML = '<div>📝 テキストをベクトル化中...</div>'
         updateProgress(55)
@@ -6464,17 +6874,28 @@ def launch_engine(event):
         status.innerHTML = '<div>🔢 TF-IDF行を計算中...</div>'
         updateProgress(70)
         
+        # TF-IDF計算
+        vectorizer = None
+        tfidf_matrix = None
+        feature_names = []
+        
         if ensure_sklearn():
-            g_vectorizer = TfidfVectorizer(max_features=2000, min_df=2, max_df=0.95)
-            g_tfidf_matrix = g_vectorizer.fit_transform(df['tokenized'].fillna(''))
-            g_feature_names = g_vectorizer.get_feature_names_out().tolist()
-        else:
-            g_vectorizer = None
-            g_tfidf_matrix = None
-            g_feature_names = []
+            vectorizer = TfidfVectorizer(max_features=2000, min_df=2, max_df=0.95)
+            tfidf_matrix = vectorizer.fit_transform(df['tokenized'].fillna(''))
+            feature_names = vectorizer.get_feature_names_out().tolist()
+        
+        # Sync to AppState and globals
+        AppState.vectorizer = vectorizer
+        AppState.tfidf_matrix = tfidf_matrix
+        AppState.feature_names = feature_names
+        g_vectorizer = vectorizer
+        g_tfidf_matrix = tfidf_matrix
+        g_feature_names = feature_names
         
         updateProgress(90)
 
+        # Sync processed DataFrame
+        AppState.df_processed = df
         g_df_processed = df
         
         # 年度コントロールを設定
@@ -6496,23 +6917,26 @@ def launch_engine(event):
             .to_dict()
         )
         
-        # 企業比較セセレクター
+        # 企業比較セセレクター (XSS sanitization)
         sel = document.getElementById('compare-companies')
         sel.innerHTML = ''.join(
-            f'<option value="{a}">{a}</option>' for a in top_applicants if a
+            f'<option value="{html.escape(str(a))}">{html.escape(str(a))}</option>' 
+            for a in top_applicants if a
         )
         
         # TF-IDF詳細セセレクター
         sel_tfidf = document.getElementById('tfidf-company')
         sel_tfidf.innerHTML = '<option value="(未選択)">(未選択)</option>' + ''.join(
-            f'<option value="{a}">{a}</option>' for a in top_applicants if a
+            f'<option value="{html.escape(str(a))}">{html.escape(str(a))}</option>' 
+            for a in top_applicants if a
         )
 
         # レーダーチャートセセレクター
         sel_radar1 = document.getElementById('radar-company1')
         sel_radar2 = document.getElementById('radar-company2')
         radar_opts = '<option value="">(選択してください)</option>' + ''.join(
-            f'<option value="{a}">{a}</option>' for a in top_applicants if a
+            f'<option value="{html.escape(str(a))}">{html.escape(str(a))}</option>' 
+            for a in top_applicants if a
         )
         sel_radar1.innerHTML = radar_opts
         sel_radar2.innerHTML = radar_opts
@@ -6520,7 +6944,7 @@ def launch_engine(event):
         # 折れ線チャート出願人セセレクター
         sel_line = document.getElementById('atlas-line-applicants')
         sel_line.innerHTML = ''.join(
-            f'<option value="{a}">{a} ({top_applicant_counts.get(a, 0)})</option>'
+            f'<option value="{html.escape(str(a))}">{html.escape(str(a))} ({top_applicant_counts.get(a, 0)})</option>'
             for a in top_applicants if a
         )
         
@@ -6581,11 +7005,11 @@ def launch_engine(event):
         
         # Display completion status
         status_info = (
-            f"ステータス: {len(g_status_colors)}種類"
-            if g_status_colors else "ステータス: 未設定"
+            f"ステータス: {len(status_colors)}種類"
+            if status_colors else "ステータス: 未設定"
         )
-        tfidf_info = f"{g_tfidf_matrix.nnz:,}" if g_tfidf_matrix is not None else "-"
-        vocab_info = f"{len(g_feature_names):,}" if g_feature_names else "-"
+        tfidf_info = f"{tfidf_matrix.nnz:,}" if tfidf_matrix is not None else "-"
+        vocab_info = f"{len(feature_names):,}" if feature_names else "-"
         status.innerHTML = f'''
             <div class="status-ok" style="font-size: 1.1rem;">🎉 分析エンジン起動完了</div>
             <div class="metrics">
@@ -6600,14 +7024,15 @@ def launch_engine(event):
     except Exception as e:
         import traceback
         status.innerHTML = (
-            f'<div class="status-err">❌ {str(e)}</div>'
-            f'<pre style="font-size:0.7rem;">{traceback.format_exc()}</pre>'
+            f'<div class="status-err">❌ {html.escape(str(e))}</div>'
+            f'<pre style="font-size:0.7rem;">{html.escape(traceback.format_exc())}</pre>'
         )
 
 # ============================================================
 # ATLASモジュール - 統計チャート
 # ============================================================
 
+@ensure_data('atlas-chart')
 def draw_atlas(event):
     """
     ユーザーの選択に基づいて統計チャートを描画する。
@@ -6633,11 +7058,6 @@ def draw_atlas(event):
     UIHelper.show_chart_loading('atlas-chart', True, 'チャート生成中...')
     
     try:
-        if g_df_processed is None:
-            UIHelper.show_chart_loading('atlas-chart', False)
-            UIHelper.show_warning('atlas-chart', 'データがありません', '先にデータをインポートしてください')
-            return
-        
         df = g_df_processed
         start = int(document.getElementById('year-start').value)
         end = int(document.getElementById('year-end').value)
@@ -7149,7 +7569,7 @@ def draw_atlas(event):
                 'applicants': applicants_count.values
             })
             if lifecycle_df.empty or len(lifecycle_df) < 2:
-                document.getElementById('atlas-chart').innerHTML = '<div class="status-warn">データ不足のため描画できません。期間を広げてください</div>'
+                UIHelper.warn_html('atlas-chart', 'データ不足のため描画できません。期間を広げてください')
                 return
             lifecycle_df['year_label'] = lifecycle_df['year'].apply(lambda y: f"'{str(int(y))[-2:]}")
             traces = [
@@ -7207,7 +7627,7 @@ def draw_atlas(event):
             exp_filtered = exp[exp['applicant_list'].isin(top_apps) & exp['ipc_parsed'].isin(top_ipcs)]
             
             if exp_filtered.empty:
-                document.getElementById('atlas-chart').innerHTML = '<div class="status-warn">IPC×出願人データがありません</div>'
+                UIHelper.warn_html('atlas-chart', 'IPC×出願人データがありません')
                 return
             
             if has_status:
@@ -7425,28 +7845,31 @@ def update_core_axis_selects():
     axis_sel = document.getElementById('core-axis-select')
     if axis_sel:
         if axes:
-            axis_sel.innerHTML = ''.join([f'<option value="{a}">{a}</option>' for a in axes])
+            axis_sel.innerHTML = ''.join([f'<option value="{html.escape(str(a))}">{html.escape(str(a))}</option>' for a in axes])
         else:
             axis_sel.innerHTML = '<option value="">(軸がありません)</option>'
 
 def render_core_rules():
     if not g_core_rules:
-        document.getElementById('core-rule-list').innerHTML = '<div class="status-warn">ルールがありません</div>'
+        UIHelper.warn_html('core-rule-list', 'ルールがありません')
         return
-    html = ''
+    html_out = ''
     for ax, cats in g_core_rules.items():
-        html += f'<h4 style="margin-top:0.6rem;">軸: {ax} ({len(cats)}件)</h4>'
-        html += '<table class="data-table"><tr><th>分/th><th>ルール</th><th>操佁/th></tr>'
+        ax_safe = html.escape(str(ax))
+        html_out += f'<h4 style="margin-top:0.6rem;">軸: {ax_safe} ({len(cats)}件)</h4>'
+        html_out += '<table class="data-table"><tr><th>分類</th><th>ルール</th><th>操作</th></tr>'
         for name, cd in cats.items():
+            name_safe = html.escape(str(name))
             rule = cd['rule'] if isinstance(cd, dict) else cd
-            html += (
-                f'<tr><td>{name}</td><td>{rule}</td><td>'
-                f'<button class="btn" data-axis="{ax}" data-name="{name}" onclick="window.coreEditRule(event)">編集</button> '
-                f'<button class="btn" data-axis="{ax}" data-name="{name}" onclick="window.coreDeleteRule(event)">削除</button>'
+            rule_safe = html.escape(str(rule))
+            html_out += (
+                f'<tr><td>{name_safe}</td><td>{rule_safe}</td><td>'
+                f'<button class="btn" data-axis="{ax_safe}" data-name="{name_safe}" onclick="window.coreEditRule(event)">編集</button> '
+                f'<button class="btn" data-axis="{ax_safe}" data-name="{name_safe}" onclick="window.coreDeleteRule(event)">削除</button>'
                 f'</td></tr>'
             )
-        html += '</table>'
-    document.getElementById('core-rule-list').innerHTML = html
+        html_out += '</table>'
+    document.getElementById('core-rule-list').innerHTML = html_out
 
 def core_add_rule(event):
     global g_core_rules
@@ -7456,12 +7879,12 @@ def core_add_rule(event):
     rule = document.getElementById('core-cat-rule').value.strip()
     definition = document.getElementById('core-cat-def').value.strip()
     if not axis or not name or not rule:
-        document.getElementById('core-rule-status').innerHTML = '<div class="status-warn">軸/分名/論理式を入力してください</div>'
+        UIHelper.warn_html('core-rule-status', '軸/分類名/論理式を入力してください')
         return
     try:
         parse_core_rule(rule)
     except Exception as e:
-        document.getElementById('core-rule-status').innerHTML = f'<div class="status-err">❌ 構文エラー: {str(e)}</div>'
+        document.getElementById('core-rule-status').innerHTML = f'<div class="status-err">❌ 構文エラー: {html.escape(str(e))}</div>'
         return
     if axis not in g_core_rules:
         g_core_rules[axis] = {}
@@ -7483,12 +7906,12 @@ def core_update_rule(event):
     rule = document.getElementById('core-cat-rule').value.strip()
     definition = document.getElementById('core-cat-def').value.strip()
     if not axis or not name or not rule:
-        document.getElementById('core-rule-status').innerHTML = '<div class="status-warn">軸/分名/論理式を入力してください</div>'
+        UIHelper.warn_html('core-rule-status', '軸/分類名/論理式を入力してください')
         return
     try:
         parse_core_rule(rule)
     except Exception as e:
-        document.getElementById('core-rule-status').innerHTML = f'<div class="status-err">❌ 構文エラー: {str(e)}</div>'
+        document.getElementById('core-rule-status').innerHTML = f'<div class="status-err">❌ 構文エラー: {html.escape(str(e))}</div>'
         return
     if axis not in g_core_rules:
         g_core_rules[axis] = {}
@@ -7533,16 +7956,16 @@ def core_cancel_edit(event):
     document.getElementById('btn-core-cancel').style.display = 'none'
     syncCoreAxisMode()
 
-# JS呼び出し用に公閁Eimport js
-window.eval("window.pyodide_globals = window.pyodide_globals || {}")
+# JS呼び出し用にグローバルオブジェクトを初期化
+if not hasattr(window, 'pyodide_globals') or window.pyodide_globals is None:
+    from pyodide.ffi import JsProxy
+    window.pyodide_globals = window.Object.new()
 
+@ensure_data('core-ai-output', '先に分析エンジンを起動してください')
 def core_ai_generate(event):
     global g_df_processed, g_col_map
-    if g_df_processed is None:
-        document.getElementById('core-ai-output').innerHTML = '<div class="status-warn">先に分析エンジンを起動してください</div>'
-        return
     if not ensure_sklearn():
-        document.getElementById('core-ai-output').innerHTML = '<div class="status-warn">追加モジュールを読み込み中です。しばらく待ってから再実行してください。</div>'
+        UIHelper.warn_html('core-ai-output', '追加モジュールを読み込み中です。しばらく待ってから再実行してください。')
         return
     df = g_df_processed
     target = document.getElementById('core-ai-target').value
@@ -7622,13 +8045,13 @@ def core_ai_generate(event):
 """
         document.getElementById('core-ai-output').innerHTML = '<div class="status-ok">✅ プロンプトを生成しました</div><pre style="white-space: pre-wrap; font-size: 0.8rem;">' + prompt + '</pre>'
     except Exception as e:
-        document.getElementById('core-ai-output').innerHTML = f'<div class="status-err">❌ {str(e)}</div>'
+        document.getElementById('core-ai-output').innerHTML = f'<div class="status-err">❌ {html.escape(str(e))}</div>'
 
 def core_import_json(event):
     global g_core_rules
     raw = document.getElementById('core-json').value.strip()
     if not raw:
-        document.getElementById('core-rule-status').innerHTML = '<div class="status-warn">JSONを力してください</div>'
+        UIHelper.warn_html('core-rule-status', 'JSONを入力してください')
         return
     try:
         data = json.loads(raw)
@@ -7648,15 +8071,13 @@ def core_import_json(event):
         update_core_axis_selects()
         render_core_rules()
     except Exception as e:
-        document.getElementById('core-rule-status').innerHTML = f'<div class="status-err">❌{str(e)}</div>'
+        document.getElementById('core-rule-status').innerHTML = f'<div class="status-err">❌{html.escape(str(e))}</div>'
 
+@ensure_data('core-run-status', '先に分析エンジンを起動してください')
 def core_run_classification(event):
     global g_df_processed, g_col_map, g_core_rules, g_core_df_classified
-    if g_df_processed is None:
-        document.getElementById('core-run-status').innerHTML = '<div class="status-err">❌ 先に分析エンジンを起動してください</div>'
-        return
     if not g_core_rules:
-        document.getElementById('core-run-status').innerHTML = '<div class="status-warn">ルールがありません</div>'
+        UIHelper.warn_html('core-run-status', 'ルールがありません')
         return
     df = g_df_processed.copy()
     try:
@@ -7688,10 +8109,10 @@ def core_run_classification(event):
         summary_html = ''
         for ax in compiled.keys():
             counts = df[ax].str.split(';').explode().value_counts().head(20)
-            summary_html += f'<h4 style="margin-top:0.6rem;">{ax}</h4>'
+            summary_html += f'<h4 style="margin-top:0.6rem;">{html.escape(str(ax))}</h4>'
             summary_html += '<table class="data-table"><tr><th>カテゴリ</th><th>件数</th></tr>'
             for name, cnt in counts.items():
-                summary_html += f'<tr><td>{name}</td><td>{int(cnt)}</td></tr>'
+                summary_html += f'<tr><td>{html.escape(str(name))}</td><td>{int(cnt)}</td></tr>'
             summary_html += '</table>'
         document.getElementById('core-summary').innerHTML = summary_html
 
@@ -7701,19 +8122,17 @@ def core_run_classification(event):
 
         update_core_axis_selects()
     except Exception as e:
-        document.getElementById('core-run-status').innerHTML = f'<div class="status-err">❌{str(e)}</div>'
+        document.getElementById('core-run-status').innerHTML = f'<div class="status-err">❌{html.escape(str(e))}</div>'
 
+@ensure_core_classified('core-reanalyze-output', '分類結果がありません')
 def core_reanalyze(event):
     global g_core_df_classified, g_core_rules, g_core_reanalyze_prompt
-    if g_core_df_classified is None:
-        document.getElementById('core-reanalyze-output').innerHTML = '<div class="status-warn">分類結果がありません</div>'
-        return
     if not ensure_sklearn():
-        document.getElementById('core-reanalyze-output').innerHTML = '<div class="status-warn">追加モジュールを読み込み中です。しばらく待ってから再実行してください。</div>'
+        UIHelper.warn_html('core-reanalyze-output', '追加モジュールを読み込み中です。しばらく待ってから再実行してください。')
         return
     axis = document.getElementById('core-reanalyze-axis').value
     if not axis:
-        document.getElementById('core-reanalyze-output').innerHTML = '<div class="status-warn">軸を選択してください</div>'
+        UIHelper.warn_html('core-reanalyze-output', '軸を選択してください')
         return
     df = g_core_df_classified
     others = df[df[axis] == 'その他']
@@ -7762,13 +8181,11 @@ def core_reanalyze(event):
 """
         document.getElementById('core-reanalyze-output').innerHTML = '<div class="status-ok">✅ 再分析プロンプトを生成しました</div><pre style="white-space: pre-wrap; font-size: 0.8rem;">' + g_core_reanalyze_prompt + '</pre>'
     except Exception as e:
-        document.getElementById('core-reanalyze-output').innerHTML = f'<div class="status-err">❌ {str(e)}</div>'
+        document.getElementById('core-reanalyze-output').innerHTML = f'<div class="status-err">❌ {html.escape(str(e))}</div>'
 
+@ensure_core_classified('core-map', '先に分類を実行してください')
 def core_draw_map(event):
     global g_core_df_classified, g_core_rules, g_col_map
-    if g_core_df_classified is None:
-        document.getElementById('core-map').innerHTML = '<div class="status-warn">先に分類を実行してください</div>'
-        return
     df = g_core_df_classified.copy()
     x_ax = document.getElementById('core-x-axis').value
     y_ax = document.getElementById('core-y-axis').value
@@ -7803,7 +8220,7 @@ def core_draw_map(event):
         temp = temp[(temp['X'] != 'その他') & (temp['Y'] != 'その他')]
 
     if temp.empty:
-        document.getElementById('core-map').innerHTML = '<div class="status-warn">データがありません</div>'
+        UIHelper.warn_html('core-map', 'データがありません')
         return
 
     pivot = temp.groupby(['X', 'Y']).size().reset_index(name='count')
@@ -7813,7 +8230,7 @@ def core_draw_map(event):
         y_vals = sorted(pivot['Y'].unique())
         z = pd.pivot_table(pivot, index='Y', columns='X', values='count', fill_value=0).reindex(index=y_vals, columns=x_vals).values
         traces = [{"type": "heatmap", "x": x_vals, "y": y_vals, "z": z, "colorscale": "Blues"}]
-        layout = ChartHelper.create_layout(title=f"特許マップ({x_ax} Á{y_ax})", height=600)
+        layout = ChartHelper.create_layout(title=f"特許マップ({x_ax} × {y_ax})", height=600)
     else:
         traces = [{
             "type": "scatter",
@@ -7824,7 +8241,7 @@ def core_draw_map(event):
             "text": [f"{x}<br>{y}<br>{c}件" for x, y, c in zip(pivot['X'], pivot['Y'], pivot['count'])],
             "hoverinfo": "text"
         }]
-        layout = ChartHelper.create_layout(title=f"特許マップ({x_ax} Á{y_ax})", height=600)
+        layout = ChartHelper.create_layout(title=f"特許マップ({x_ax} × {y_ax})", height=600)
 
     ChartHelper.draw("core-map", traces, layout)
 
@@ -7846,13 +8263,13 @@ def finish_heavy_init():
     except Exception:
         pass
 
+@ensure_data('core-results')
 def core_search(event):
     global g_df_processed, g_tfidf_matrix, g_vectorizer, g_col_map
-    if not require_data(): return
     
     query = document.getElementById('core-query').value.strip()
     if not query:
-        document.getElementById('core-results').innerHTML = '<div class="status-warn">クエリを力してください</div>'
+        UIHelper.warn_html('core-results', 'クエリを入力してください')
         return
     
     target = document.getElementById('core-target').value
@@ -7906,7 +8323,7 @@ def core_search(event):
         if use_parser:
             node = parse_core_rule(q_norm)
             if not node:
-                document.getElementById('core-results').innerHTML = '<div class="status-warn">クエリを解析できません</div>'
+                UIHelper.warn_html('core-results', 'クエリを解析できません')
                 return
             mask = df[search_col].apply(lambda x: node.evaluate(_core_text_preprocessor(str(x))))
         else:
@@ -7921,18 +8338,21 @@ def core_search(event):
             html += '<table class="data-table"><tr><th>No.</th><th>タイトル</th><th>年</th><th>出願人</th></tr>'
             for i, (_, row) in enumerate(results.iterrows(), 1):
                 apps = row.get('applicant_list', [])
-                app_str = apps[0][:15] if apps else '-'
-                html += f'<tr><td>{i}</td><td>{str(row.get(title_col, ""))[:50]}</td><td>{row.get("year", "-")}</td><td>{app_str}</td></tr>'
+                app_str = html.escape(str(apps[0])[:15]) if apps else '-'
+                title_cut = html.escape(str(row.get(title_col, ""))[:50])
+                html += f'<tr><td>{i}</td><td>{title_cut}</td><td>{row.get("year", "-")}</td><td>{app_str}</td></tr>'
             html += '</table>'
         
         document.getElementById('core-results').innerHTML = html
         
     except Exception as e:
-        document.getElementById('core-results').innerHTML = f'<div class="status-err">❌{str(e)}</div>'
+        document.getElementById('core-results').innerHTML = f'<div class="status-err">❌{html.escape(str(e))}</div>'
 
 # =====================================================
 # Saturn V
 # =====================================================
+@ensure_data('saturn-status')
+@ensure_tfidf('saturn-status')
 def run_saturn(event):
     global g_df_processed, g_tfidf_matrix, g_feature_names, g_col_map
     
@@ -7941,9 +8361,6 @@ def run_saturn(event):
     UIHelper.show_chart_loading('saturn-chart', True, '技術ランドスケープを生成中...')
     
     try:
-        if g_df_processed is None or g_tfidf_matrix is None:
-            UIHelper.show_warning('saturn-status', 'データが読み込まれていません', '先に分析エンジンを起動してください')
-            return
         if not ensure_sklearn():
             UIHelper.show_info('saturn-status', '追加モジュールを読み込み中', 'しばらく待ってから再実行してください')
             return
@@ -8094,7 +8511,7 @@ def run_saturn(event):
             
             traces.append(trace)
         
-        # クラスタ中要ベル
+        # クラスタ中心性ラベル
         if show_labels:
             center_x = []
             center_y = []
@@ -8133,7 +8550,7 @@ def run_saturn(event):
         )
         ChartHelper.draw("saturn-chart", traces, layout)
         
-        html = '<h4 style="margin-top: 0.5rem;">クラスタサマリー</h4><table class="data-table"><tr><th>クラスタ</th><th>件数</th><th>主要キーワーチ/th></tr>'
+        html = '<h4 style="margin-top: 0.5rem;">クラスタサマリー</h4><table class="data-table"><tr><th>クラスタ</th><th>件数</th><th>主要キーワード</th></tr>'
         for k in range(n_clusters):
             mask = dfs['cluster'] == k
             cnt = int(mask.sum())
@@ -8141,11 +8558,11 @@ def run_saturn(event):
                 cluster_indices = np.where(mask)[0]
                 cluster_tfidf = g_tfidf_matrix[idx[cluster_indices]].mean(axis=0).A1
                 top_indices = np.argsort(cluster_tfidf)[::-1][:5]
-                top_words = ', '.join([g_feature_names[i] for i in top_indices])
+                top_words = ', '.join([html.escape(str(g_feature_names[i])) for i in top_indices])
                 html += f'<tr><td style="color:{COLOR_SEQUENCE[k % len(COLOR_SEQUENCE)]}; font-weight:bold;">C{k+1}</td><td>{cnt}</td><td style="font-size:0.75rem;">{top_words}</td></tr>'
         html += '</table>'
         document.getElementById('saturn-summary').innerHTML = html
-        UIHelper.show_success('saturn-status', '分析完了', f'{n_clusters}クラスタを検しました')
+        UIHelper.show_success('saturn-status', '分析完了', f'{n_clusters}クラスタを検出しました')
         
     except Exception as e:
         import traceback
@@ -8158,9 +8575,9 @@ def run_saturn(event):
 # =====================================================
 # Explorer
 # =====================================================
+@ensure_tfidf('keyword-chart')
 def show_keywords(event):
     global g_tfidf_matrix, g_feature_names
-    if not require_tfidf(): return
     
     top_n = int(document.getElementById('keyword-top').value)
     
@@ -8189,13 +8606,13 @@ def show_keywords(event):
     layout["height"] = max(450, top_n * 20)
     ChartHelper.draw("keyword-chart", traces, layout)
 
+@ensure_data('trend-chart')
 def show_trend(event):
     global g_df_processed
-    if not require_data(): return
     
     keywords = [k.strip() for k in document.getElementById('trend-keywords').value.split(',') if k.strip()]
     if not keywords:
-        document.getElementById('trend-chart').innerHTML = '<div class="status-warn">キーワードを入力してください</div>'
+        UIHelper.warn_html('trend-chart', 'キーワードを入力してください')
         return
     
     df = g_df_processed
@@ -8221,15 +8638,16 @@ def show_trend(event):
     )
     ChartHelper.draw("trend-chart", traces, layout)
 
+@ensure_data('compare-chart')
+@ensure_tfidf('compare-chart')
 def compare_companies(event):
     global g_df_processed, g_tfidf_matrix, g_feature_names
-    if not require_data(): return
     
     sel = document.getElementById('compare-companies')
     companies = [sel.options.item(i).value for i in range(sel.options.length) if sel.options.item(i).selected]
     
     if len(companies) < 2:
-        document.getElementById('compare-chart').innerHTML = '<div class="status-warn">2社以上選択してください</div>'
+        UIHelper.warn_html('compare-chart', '2社以上選択してください')
         return
     
     df = g_df_processed
@@ -8263,9 +8681,10 @@ def compare_companies(event):
     )
     ChartHelper.draw("compare-chart", traces, layout)
 
+@ensure_data('heatmap-chart')
+@ensure_tfidf('heatmap-chart')
 def show_heatmap(event):
     global g_df_processed, g_tfidf_matrix, g_feature_names
-    if not require_data(): return
     
     n_companies = int(document.getElementById('heatmap-companies').value)
     n_keywords = int(document.getElementById('heatmap-keywords').value)
@@ -8298,7 +8717,7 @@ def show_heatmap(event):
         "showscale": True
     }]
     layout = ChartHelper.create_layout(
-        title="企業×キーワーテヒートマップ",
+        title="企業×キーワードヒートマップ",
         height=max(450, n_companies * 30),
         margin={"l": 150, "b": 120},
         xaxis={"tickangle": -45}
@@ -8306,11 +8725,12 @@ def show_heatmap(event):
     ChartHelper.draw("heatmap-chart", traces, layout)
 
 # =====================================================
-# Explorer - 急上ワード検
+# Explorer - 急上昇ワード検出
 # =====================================================
+@ensure_data('emerging-chart')
+@ensure_tfidf('emerging-chart')
 def show_emerging(event):
     global g_df_processed, g_tfidf_matrix, g_feature_names, g_vectorizer
-    if not require_data(): return
     
     base_year = int(document.getElementById('emerging-year').value)
     top_n = int(document.getElementById('emerging-top').value)
@@ -8322,7 +8742,7 @@ def show_emerging(event):
     df_new = df[df['year'] >= base_year]
     
     if len(df_old) < 10 or len(df_new) < 10:
-        document.getElementById('emerging-chart').innerHTML = '<div class="status-warn">データが不足していす（期間を調整してください</div>'
+        UIHelper.warn_html('emerging-chart', 'データが不足しています（期間を調整してください）')
         return
     
     # 年間キーワード頻度を計算
@@ -8337,7 +8757,7 @@ def show_emerging(event):
     new_idx = np.where(new_mask)[0]
     
     if len(old_idx) == 0 or len(new_idx) == 0:
-        document.getElementById('emerging-chart').innerHTML = '<div class="status-warn">期間データがありません</div>'
+        UIHelper.warn_html('emerging-chart', '期間データがありません')
         return
     
     # TF-IDF合計を計算
@@ -8371,15 +8791,13 @@ def show_emerging(event):
 # =====================================================
 # KWIC検索 (Keyword in Context)
 # =====================================================
+@ensure_data('kwic-result', 'データが読み込まれていません')
 def kwic_search(event):
     global g_df_processed
-    if g_df_processed is None:
-        document.getElementById('kwic-result').innerHTML = '<div class="status-warn">データが読み込まれていせん</div>'
-        return
     
     keyword = document.getElementById('kwic-keyword').value.strip()
     if not keyword:
-        document.getElementById('kwic-result').innerHTML = '<div class="status-warn">キーワードを入力してください</div>'
+        UIHelper.warn_html('kwic-result', 'キーワードを入力してください')
         return
     
     context_len = int(document.getElementById('kwic-context').value)
@@ -8435,7 +8853,7 @@ def kwic_search(event):
             results.append({
                 'doc_id': doc_id,
                 'applicant': applicant,
-                'context': f'{prefix}{before}<mark style="background:#ffd93d;color:#000;font-weight:bold;">{match}</mark>{after}{suffix}'
+                'context': f'{prefix}{html.escape(before)}<mark style="background:#ffd93d;color:#000;font-weight:bold;">{html.escape(match)}</mark>{html.escape(after)}{suffix}'
             })
             
             pos += len(keyword)
@@ -8447,18 +8865,18 @@ def kwic_search(event):
             break
     
     if not results:
-        document.getElementById('kwic-result').innerHTML = f'<div class="status-warn">「{keyword}」が見つかりませんでした</div>'
+        document.getElementById('kwic-result').innerHTML = f'<div class="status-warn">「{html.escape(keyword)}」が見つかりませんでした</div>'
         return
     
     html = f'''
         <div style="margin-bottom: 0.5rem; color: #4fc3f7;">
-            <strong>検索結果: {len(results)}件</strong>最大100件表示        </div>
+            <strong>検索結果: {len(results)}件</strong>（最大100件表示）</div>
         <table class="data-table" style="font-size: 0.85rem;">
-            <tr><th style="width:15%;">語ID</th><th style="width:15%;">出願人</th><th>コンテナスチ/th></tr>
+            <tr><th style="width:15%;">文書ID</th><th style="width:15%;">出願人</th><th>コンテキスト</th></tr>
     '''
     
     for r in results:
-        html += f'<tr><td>{r["doc_id"]}</td><td>{r["applicant"]}</td><td style="text-align:left;">{r["context"]}</td></tr>'
+        html += f'<tr><td>{html.escape(r["doc_id"])}</td><td>{html.escape(r["applicant"])}</td><td style="text-align:left;">{r["context"]}</td></tr>'
     
     html += '</table>'
     document.getElementById('kwic-result').innerHTML = html
@@ -8466,11 +8884,11 @@ def kwic_search(event):
 # =====================================================
 # CREW - ネットワーク分析
 # =====================================================
+@ensure_data('network-status')
 def build_network(event):
     global g_df_processed
-    if not require_data(): return
     if not ensure_networkx():
-        document.getElementById('network-status').innerHTML = '<div class="status-warn">追加モジュールを読み込み中です。しばらく待ってから再実行してください。</div>'
+        UIHelper.warn_html('network-status', '追加モジュールを読み込み中です。しばらく待ってから再実行してください。')
         return
     
     document.getElementById('network-status').innerHTML = '<div class="spinner" style="width:25px;height:25px;display:inline-block;"></div> 構築中...'
@@ -8502,7 +8920,7 @@ def build_network(event):
                 G.add_edge(n1, n2, weight=weight)
         
         if len(G.nodes()) == 0:
-            document.getElementById('network-status').innerHTML = '<div class="status-warn">ノードがありません。最小エッジ重みを下げてください</div>'
+            UIHelper.warn_html('network-status', 'ノードがありません。最小エッジ重みを下げてください')
             return
         
         # ノード数制限
@@ -8521,25 +8939,25 @@ def build_network(event):
         
         if centrality_type == 'betweenness':
             centrality = nx.betweenness_centrality(G)
-            centrality_name = '媒介中要'
+            centrality_name = '媒介中心性'
         elif centrality_type == 'closeness':
             centrality = nx.closeness_centrality(G)
-            centrality_name = '近接中要'
+            centrality_name = '近接中心性'
         elif centrality_type == 'eigenvector':
             try:
                 centrality = nx.eigenvector_centrality(G, max_iter=100)
-            except:
-                centrality = nx.degree_centrality(G)
-            centrality_name = '固有クトル中要'
+            except (nx.NetworkXException, nx.PowerIterationFailedConvergence):
+                centrality = nx.degree_centrality(G)  # Fallback if eigenvector fails
+            centrality_name = '固有ベクトル中心性'
         else:
             centrality = nx.degree_centrality(G)
-            centrality_name = '次数中要'
+            centrality_name = '次数中心性'
         
         degrees = dict(G.degree())
         max_degree = max(degrees.values()) if degrees else 1
         max_centrality = max(centrality.values()) if centrality else 1
         
-        # D3 Force用のノドデータを準備
+        # D3 Force用のノードデータを準備
         nodes_data = []
         for i, n in enumerate(G.nodes()):
             nodes_data.append({
@@ -8575,23 +8993,24 @@ def build_network(event):
             </div>
             <p style="color:#4fc3f7; margin:0.5rem 0; font-size:0.9rem;">💡 ノードをドラッグして動かせます</p>
             <h4>{centrality_name} TOP10</h4>
-            <table class="data-table"><tr><th>ノチ/th><th>次数</th><th>{centrality_name}</th></tr>
+            <table class="data-table"><tr><th>ノード</th><th>次数</th><th>{centrality_name}</th></tr>
         '''
         top_nodes = sorted(centrality.items(), key=lambda x: -x[1])[:10]
         for node, cent in top_nodes:
-            html += f'<tr><td>{str(node)[:30]}</td><td>{degrees[node]}</td><td>{cent:.3f}</td></tr>'
+            html += f'<tr><td>{html.escape(str(node)[:30])}</td><td>{degrees[node]}</td><td>{cent:.3f}</td></tr>'
         html += '</table>'
         document.getElementById('network-stats').innerHTML = html
         document.getElementById('network-status').innerHTML = '<span class="status-ok">✅ 完了</span>'
         
     except Exception as e:
         import traceback
-        document.getElementById('network-status').innerHTML = f'<span class="status-err">❌{str(e)}</span>'
+        document.getElementById('network-status').innerHTML = f'<span class="status-err">❌{html.escape(str(e))}</span>'
         debugLog(traceback.format_exc())
 
 # =====================================================
 # MEGA - ワードクラウド（D3-cloud使用）
 # =====================================================
+@ensure_data('wordcloud-chart', '先にCSVデータを読み込んでください')
 def show_wordcloud(event):
     """
     d3-cloudを使用した本格的なワードクラウドを生成する。
@@ -8600,17 +9019,12 @@ def show_wordcloud(event):
     """
     global g_tfidf_matrix, g_feature_names, g_vectorizer, g_df_processed
     
-    # データ確認
-    if g_df_processed is None:
-        document.getElementById('wordcloud-chart').innerHTML = '<div class="status-warn">先にCSVデータを読み込んでください</div>'
-        return
-    
     # TF-IDF未実行なら自動実行
     if g_tfidf_matrix is None:
         document.getElementById('wordcloud-chart').innerHTML = '<div class="status-info">🔄 TF-IDF分析を自動実行中...</div>'
         
         if not ensure_sklearn():
-            document.getElementById('wordcloud-chart').innerHTML = '<div class="status-warn">scikit-learnを読み込み中です。しばらく待ってから再実行してください。</div>'
+            UIHelper.warn_html('wordcloud-chart', 'scikit-learnを読み込み中です。しばらく待ってから再実行してください。')
             return
         
         try:
@@ -8619,7 +9033,7 @@ def show_wordcloud(event):
             g_feature_names = g_vectorizer.get_feature_names_out().tolist()
             debugLog(f"[WordCloud] TF-IDF自動実行完了: {len(g_feature_names)} features")
         except Exception as e:
-            document.getElementById('wordcloud-chart').innerHTML = f'<div class="status-err">TF-IDF分析エラー: {str(e)}</div>'
+            document.getElementById('wordcloud-chart').innerHTML = f'<div class="status-err">TF-IDF分析エラー: {html.escape(str(e))}</div>'
             return
     
     max_words = int(document.getElementById('wc-max-words').value)
@@ -8643,9 +9057,9 @@ def show_wordcloud(event):
 # =====================================================
 # MEGA - N-gram分析
 # =====================================================
+@ensure_data('ngram-chart')
 def show_ngram(event):
     global g_df_processed
-    if not require_data(): return
     
     n = int(document.getElementById('ngram-size').value)
     top_n = int(document.getElementById('ngram-top').value)
@@ -8664,7 +9078,7 @@ def show_ngram(event):
     top_ngrams = ngram_counter.most_common(top_n)
     
     if not top_ngrams:
-        document.getElementById('ngram-chart').innerHTML = '<div class="status-warn">N-gramが見つかりません</div>'
+        UIHelper.warn_html('ngram-chart', 'N-gramが見つかりません')
         return
     
     # D3アニメーション棒グラフ用のデータ準備
@@ -8676,11 +9090,12 @@ def show_ngram(event):
 # =====================================================
 # MEGA - 共起ネットワーク
 # =====================================================
+@ensure_data('cooccur-chart')
+@ensure_tfidf('cooccur-chart')
 def show_cooccurrence(event):
     global g_df_processed, g_feature_names, g_tfidf_matrix
-    if not require_data(): return
     if not ensure_networkx():
-        document.getElementById('cooccur-chart').innerHTML = '<div class="status-warn">追加モジュールを読み込み中です。しばらく待ってから再実行してください。</div>'
+        UIHelper.warn_html('cooccur-chart', '追加モジュールを読み込み中です。しばらく待ってから再実行してください。')
         return
     
     n_nodes = int(document.getElementById('cooccur-nodes').value)
@@ -8712,13 +9127,13 @@ def show_cooccurrence(event):
             G.add_edge(w1, w2, weight=cnt)
     
     if len(G.nodes()) == 0:
-        document.getElementById('cooccur-chart').innerHTML = '<div class="status-warn">共起関係がありません。閾値を下げてください</div>'
+        UIHelper.warn_html('cooccur-chart', '共起関係がありません。閾値を下げてください')
         return
     
     degrees = dict(G.degree())
     max_deg = max(degrees.values()) if degrees else 1
     
-    # D3 Force用のノドデータ
+    # D3 Force用のノードデータ
     nodes_data = []
     for i, n in enumerate(G.nodes()):
         nodes_data.append({
@@ -8748,6 +9163,7 @@ def show_cooccurrence(event):
 # NOVA - アドバンスド可視化（PyScript限定機能）
 # =====================================================
 
+@ensure_data('sankey-chart', 'データを読み込んでください')
 def show_sankey(event):
     """
     サンキーダイアグラムを生成する（D3.js版）。
@@ -8758,8 +9174,6 @@ def show_sankey(event):
     event : Event
         ボタンクリックイベント    """
     global g_df_processed
-    if not require_data('sankey-chart', 'データを読み込んでください'):
-        return
     
     n_applicants = int(document.getElementById('sankey-applicants').value)
     n_ipcs = int(document.getElementById('sankey-ipcs').value)
@@ -8783,7 +9197,7 @@ def show_sankey(event):
                 rows.append({'applicant': app.strip(), 'ipc': ipc_main})
     
     if not rows:
-        document.getElementById('sankey-chart').innerHTML = '<div class="status-warn">出願人/IPC・FIデータが不足しています</div>'
+        UIHelper.warn_html('sankey-chart', '出願人/IPC・FIデータが不足しています')
         return
     
     flow_df = pd.DataFrame(rows)
@@ -8826,6 +9240,7 @@ def show_sankey(event):
     # D3.jsでサンキーダイアグラムを描画
     window.drawSankeyDiagram("sankey-chart", json.dumps(sankey_data), color_scheme)
 
+@ensure_data('race-chart', 'データを読み込んでください')
 def show_bubble_race(event=None):
     """
     バブルレースチャートを生成・再生する。
@@ -8837,8 +9252,6 @@ def show_bubble_race(event=None):
         ボタンクリックイベント
     """
     global g_df_processed
-    if not require_data('race-chart', 'データを読み込んでください'):
-        return
     
     n_companies = int(document.getElementById('race-companies').value)
     speed_val = document.getElementById('race-speed').value
@@ -8851,7 +9264,7 @@ def show_bubble_race(event=None):
     df = df[df['year'] > 0].copy()
     
     if len(df) == 0:
-        document.getElementById('race-chart').innerHTML = '<div class="status-warn">年データがありません</div>'
+        UIHelper.warn_html('race-chart', '年データがありません')
         return
     
     # explodeを使って出願人を展開
@@ -8861,13 +9274,13 @@ def show_bubble_race(event=None):
     exp = exp[exp['applicant_list'] != '']
     
     if len(exp) == 0:
-        document.getElementById('race-chart').innerHTML = '<div class="status-warn">出願人データがありません</div>'
+        UIHelper.warn_html('race-chart', '出願人データがありません')
         return
     
     # 年ごと・出願人ごとの件数集計
     year_app_counts = exp.groupby(['year', 'applicant_list']).size().reset_index(name='count')
     
-    # チチ
+    # デバッグログ
     debugLog(f"[BubbleRace] Total records: {len(year_app_counts)}, Years: {exp['year'].nunique()}, Applicants: {exp['applicant_list'].nunique()}")
     
     # 年ごとのデータを構築
@@ -8879,7 +9292,7 @@ def show_bubble_race(event=None):
         year_data[year_int][row['applicant_list']] = int(row['count'])
     
     if not year_data:
-        document.getElementById('race-chart').innerHTML = '<div class="status-warn">年次データが不足しています</div>'
+        UIHelper.warn_html('race-chart', '年次データが不足しています')
         return
     
     # 注意: 年の出願人数を確認    for y in sorted(year_data.keys())[:3]:
@@ -8904,9 +9317,10 @@ def show_bubble_race(event=None):
     
     debugLog(f"[BubbleRace] Years: {len(sorted_years)}, Total applicants: {len(cumulative)}")
     
-    # D3.jsでバブルレースを期化
+    # D3.jsでバブルレースを初期化
     window.drawBubbleRace("race-chart", json.dumps(race_data), speed)
 
+@ensure_data('circle-chart', 'データを読み込んでください')
 def show_circle_packing(event):
     """
     サークルパッキングを生成する。
@@ -8918,8 +9332,6 @@ def show_circle_packing(event):
         ボタンクリックイベント
     """
     global g_df_processed, g_col_map
-    if not require_data('circle-chart', 'データを読み込んでください'):
-        return
     
     hierarchy = document.getElementById('circle-hierarchy').value
     n_count = int(document.getElementById('circle-count').value)
@@ -9062,13 +9474,14 @@ def show_circle_packing(event):
 # =====================================================
 # MEGA - TF-IDF詳細
 # =====================================================
+@ensure_data('tfidf-result')
+@ensure_tfidf('tfidf-result')
 def show_tfidf_detail(event):
     global g_df_processed, g_tfidf_matrix, g_feature_names
-    if not require_data(): return
     
     company = document.getElementById('tfidf-company').value
     if not company or company == '(未選択)':
-        document.getElementById('tfidf-result').innerHTML = '<div class="status-warn">企業を選択してください</div>'
+        UIHelper.warn_html('tfidf-result', '企業を選択してください')
         return
     
     df = g_df_processed
@@ -9077,7 +9490,7 @@ def show_tfidf_detail(event):
     company_indices = np.where(mask)[0]
     
     if len(company_indices) == 0:
-        document.getElementById('tfidf-result').innerHTML = '<div class="status-warn">該当データがありません</div>'
+        UIHelper.warn_html('tfidf-result', '該当データがありません')
         return
     
     # 企業全体のTF-IDF平均
@@ -9090,13 +9503,13 @@ def show_tfidf_detail(event):
     top_indices = np.argsort(diff)[::-1][:20]
     
     html = f'''
-        <div class="status-ok">📊 {company} の特徴語分析（{len(company_indices)}件）</div>
+        <div class="status-ok">📊 {html.escape(str(company))} の特徴語分析（{len(company_indices)}件）</div>
         <table class="data-table" style="margin-top: 0.5rem;">
             <tr><th>キーワード</th><th>スコア</th><th>全体比</th></tr>
     '''
     
     for i in top_indices:
-        word = g_feature_names[i]
+        word = html.escape(str(g_feature_names[i]))
         score = float(company_tfidf[i])
         ratio = score / (overall_tfidf[i] + 0.0001)
         bar_width = min(100, ratio * 20)
@@ -9112,10 +9525,9 @@ def show_tfidf_detail(event):
 # =====================================================
 # MEGA - 戦略マトリクス (CAGR×シェア)
 # =====================================================
+@ensure_data('strategy-chart', 'データがありません')
 def show_strategy_matrix(event):
     global g_df_processed
-    if not require_data('strategy-chart', 'データがありません'):
-        return
     
     df = g_df_processed
     n_companies = int(document.getElementById('strategy-companies').value)
@@ -9175,7 +9587,7 @@ def show_strategy_matrix(event):
         })
     
     if not results:
-        document.getElementById('strategy-chart').innerHTML = '<div class="status-warn">データがありません</div>'
+        UIHelper.warn_html('strategy-chart', 'データがありません')
         return
     
     # バブルサイズ
@@ -9245,16 +9657,16 @@ def show_strategy_matrix(event):
             pos = '💰 金なる木'
         else:
             pos = '🐕 負け犬'
-        html += f'<tr><td>{truncate_applicant_name(r["name"], 25)}</td><td>{r["share"]:.1f}%</td><td>{r["cagr"]:+.1f}%</td><td>{pos}</td></tr>'
+        html += f'<tr><td>{html.escape(truncate_applicant_name(r["name"], 25))}</td><td>{r["share"]:.1f}%</td><td>{r["cagr"]:+.1f}%</td><td>{pos}</td></tr>'
     html += '</table>'
     document.getElementById('strategy-summary').innerHTML = html
 
 # =====================================================
 # ツリーマップ
 # =====================================================
+@ensure_data('treemap-chart')
 def show_treemap(event):
     global g_df_processed
-    if not require_data(): return
     
     df = g_df_processed
     level = document.getElementById('treemap-level').value
@@ -9274,7 +9686,7 @@ def show_treemap(event):
     counts = ipc_list.value_counts().head(50)
     
     if len(counts) == 0:
-        document.getElementById('treemap-chart').innerHTML = '<div class="status-warn">IPC分類が見つかりません</div>'
+        UIHelper.warn_html('treemap-chart', 'IPC分類が見つかりません')
         return
     
     # セクション情報を追加（階層構造用）
@@ -9328,9 +9740,9 @@ def show_treemap(event):
 # =====================================================
 # レーダーチャート
 # =====================================================
+@ensure_data('radar-chart')
 def show_radar(event):
     global g_df_processed
-    if not require_data(): return
     
     df = g_df_processed
     company1 = document.getElementById('radar-company1').value
@@ -9338,7 +9750,7 @@ def show_radar(event):
     axis_type = document.getElementById('radar-axis').value
     
     if not company1:
-        document.getElementById('radar-chart').innerHTML = '<div class="status-warn">企業を選択してください</div>'
+        UIHelper.warn_html('radar-chart', '企業を選択してください')
         return
     
     # 企業のIPC分布を計算
@@ -9355,7 +9767,7 @@ def show_radar(event):
     
     # dist1が空の場合エラー処理
     if dist1.empty:
-        document.getElementById('radar-chart').innerHTML = '<div class="status-warn">選択した企業のIPCデータがありません</div>'
+        UIHelper.warn_html('radar-chart', '選択した企業のIPCデータがありません')
         return
     
     if axis_type == 'section':
@@ -9372,7 +9784,7 @@ def show_radar(event):
     
     # カテゴリが空の場合エラー処理
     if not categories:
-        document.getElementById('radar-chart').innerHTML = '<div class="status-warn">表示するデータがありません</div>'
+        UIHelper.warn_html('radar-chart', '表示するデータがありません')
         return
     
     # 正規化（各企業の最大値を100とする）
@@ -9407,7 +9819,7 @@ def show_radar(event):
         })
     
     layout = ChartHelper.create_layout(
-        title="技術ートフォリオ比較レーダーチャート！",
+        title="技術ポートフォリオ比較レーダーチャート",
         height=600,
         polar={
             "radialaxis": {"visible": True, "range": [0, 100]},
@@ -9422,10 +9834,10 @@ def show_radar(event):
 # 新D3.js可視化関数
 # =====================================================
 
+@ensure_data('sunburst-chart')
 def show_sunburst(event):
-    """サンバスト図PC/FI階層構造を表示"""
+    """サンバースト図でIPC/FI階層構造を表示"""
     global g_df_processed
-    if not require_data(): return
     
     df = g_df_processed
     source = document.getElementById('sunburst-source').value
@@ -9464,7 +9876,7 @@ def show_sunburst(event):
             cls_node["children"].append(sub_node)
         sub_node["value"] = sub_node.get("value", 0) + 1
     
-    # 空のchildrenを持つノドを修正
+    # 空のchildrenを持つノードを修正
     def fix_empty_children(node):
         if "children" in node:
             if len(node["children"]) == 0:
@@ -9478,10 +9890,10 @@ def show_sunburst(event):
     
     window.drawSunburst("sunburst-chart", json.dumps(hierarchy), color_scheme)
 
+@ensure_data('chord-chart')
 def show_chord(event):
-    """コード図同関係）を表示"""
+    """コード図（共起関係）を表示"""
     global g_df_processed
-    if not require_data(): return
     
     df = g_df_processed
     chord_type = document.getElementById('chord-type').value
@@ -9519,11 +9931,10 @@ def show_chord(event):
     data = {"names": top_items, "matrix": matrix}
     window.drawChordDiagram("chord-chart", json.dumps(data))
 
+@ensure_data('stream-chart', 'データがありません。まず前処理実行してください。')
 def show_streamgraph(event):
     """ストリームグラフを表示"""
     global g_df_processed, g_tfidf_matrix, g_feature_names
-    if not require_data('stream-chart', 'データがありません。まず前処理実行してください。'):
-        return
     
     df = g_df_processed
     stream_type = document.getElementById('stream-type').value
@@ -9531,19 +9942,19 @@ def show_streamgraph(event):
     
     # 年カラムの確認
     if 'year' not in df.columns:
-        document.getElementById('stream-chart').innerHTML = '<div class="status-warn">年カラムがありません。出願日カラムを設定してください。</div>'
+        UIHelper.warn_html('stream-chart', '年カラムがありません。出願日カラムを設定してください。')
         return
     
     # 有効な年を取得（0より大きい年のみ）
     valid_years = sorted([y for y in df['year'].dropna().unique() if y > 0])
     if len(valid_years) == 0:
-        document.getElementById('stream-chart').innerHTML = '<div class="status-warn">有効な年データがありません。</div>'
+        UIHelper.warn_html('stream-chart', '有効な年データがありません。')
         return
     
     # キーワード分析の場合TF-IDFを使用
     if stream_type == 'keyword':
         if g_tfidf_matrix is None or g_feature_names is None or len(g_feature_names) == 0:
-            document.getElementById('stream-chart').innerHTML = '<div class="status-warn">TF-IDF行列がありません。前処理を実行してください。</div>'
+            UIHelper.warn_html('stream-chart', 'TF-IDF行列がありません。前処理を実行してください。')
             return
         
         # 全体でのTOP Nキーワードを取得
@@ -9586,11 +9997,11 @@ def show_streamgraph(event):
         try:
             all_items = df[col].explode().dropna()
             if len(all_items) == 0:
-                document.getElementById('stream-chart').innerHTML = '<div class="status-warn">分析対象のデータがありません。</div>'
+                UIHelper.warn_html('stream-chart', '分析対象のデータがありません。')
                 return
             top_items = all_items.value_counts().head(top_n).index.tolist()
         except Exception as e:
-            document.getElementById('stream-chart').innerHTML = f'<div class="status-err">データ取得エラー: {e}</div>'
+            document.getElementById('stream-chart').innerHTML = f'<div class="status-err">データ取得エラー: {html.escape(str(e))}</div>'
             return
         
         # 年別集計
@@ -9606,18 +10017,18 @@ def show_streamgraph(event):
                 row[item] = int(count)
             series.append(row)
     
-    # 空データチェチ
+    # 空データチェック
     if len(series) == 0 or len(top_items) == 0:
-        document.getElementById('stream-chart').innerHTML = '<div class="status-warn">表示するデータがありません、/div>'
+        UIHelper.warn_html('stream-chart', '表示するデータがありません')
         return
     
     data = {"keys": top_items, "series": series}
     window.drawStreamgraph("stream-chart", json.dumps(data))
 
+@ensure_data('dendro-chart')
 def show_dendrogram(event):
-    """チドログラム階層クラスタリングを表示"""
+    """デンドログラムで階層クラスタリングを表示"""
     global g_df_processed, g_tfidf_matrix, g_feature_names
-    if not require_data(): return
     
     target = document.getElementById('dendro-target').value
     top_n = int(document.getElementById('dendro-count').value)
@@ -9659,16 +10070,15 @@ def build_simple_hierarchy(items):
     }
 
 # =====================================================
-# エクスポト機
+# エクスポート機能
 # =====================================================
+@ensure_data('export-result', 'データがありません')
 def export_summary(event):
     global g_df_processed
-    if not require_data('export-result', 'データがありません'):
-        return
     
     df = g_df_processed
     
-    summary = f"""=== ARTEMIS 分サマリー ===
+    summary = f"""=== ARTEMIS 分析サマリー ===
 総件数: {len(df):,}
 期間: {df['year'].min()} - {df['year'].max()}
 出願人数: {df.explode('applicant_list')['applicant_list'].nunique():,}
@@ -9684,35 +10094,33 @@ IPC数: {df.explode('ipc_list')['ipc_list'].nunique():,}
     top_ipcs = df.explode('ipc_list')['ipc_list'].value_counts().head(5)
     for ipc, cnt in top_ipcs.items():
         summary += f"{ipc}: {cnt}件\n"
-    # クリテボドにコピ
+    # クリップボードにコピー
     from js import navigator
     navigator.clipboard.writeText(summary)
     
-    document.getElementById('export-result').innerHTML = '<div class="status-ok">📋 クリテボドにコピしました</div>'
+    document.getElementById('export-result').innerHTML = '<div class="status-ok">📋 クリップボードにコピーしました</div>'
 
+@ensure_tfidf('export-result')
 def export_keywords(event):
     global g_tfidf_matrix, g_feature_names
-    if not require_tfidf('export-result'):
-        return
     
     sums = np.array(g_tfidf_matrix.sum(axis=0)).flatten()
     top_indices = np.argsort(sums)[::-1][:50]
     
-    keyword_list = "=== TOP50 キーワーチ===\n"
+    keyword_list = "=== TOP50 キーワード ===\n"
     for rank, i in enumerate(top_indices, 1):
         keyword_list += f"{rank}. {g_feature_names[i]} (スコア: {sums[i]:.2f})\n"
     from js import navigator
     navigator.clipboard.writeText(keyword_list)
     
-    document.getElementById('export-result').innerHTML = '<div class="status-ok">📋 キーワードリストをコピしました</div>'
+    document.getElementById('export-result').innerHTML = '<div class="status-ok">📋 キーワードリストをコピーしました</div>'
 
 # =====================================================
 # VOYAGER - 自動レポート生成
 # =====================================================
+@ensure_data('export-result', 'データがありません')
 def generate_report(event):
     global g_df_processed, g_tfidf_matrix, g_feature_names
-    if not require_data('export-result', 'データがありません'):
-        return
     
     df = g_df_processed
     
@@ -9721,12 +10129,12 @@ def generate_report(event):
     year_min = int(df['year'].min()) if df['year'].min() > 0 else '不明'
     year_max = int(df['year'].max()) if df['year'].max() > 0 else '不明'
     
-    # 出願人分
+    # 出願人分析
     exp_apps = df.explode('applicant_list')['applicant_list']
     n_applicants = exp_apps.nunique()
     top_apps = exp_apps.value_counts().head(10)
     
-    # IPC分
+    # IPC分析
     exp_ipc = df.explode('ipc_list')['ipc_list']
     n_ipcs = exp_ipc.nunique()
     top_ipcs = exp_ipc.value_counts().head(5)
@@ -9800,10 +10208,9 @@ def generate_report(event):
     document.getElementById('report-text').value = report
     document.getElementById('export-result').innerHTML = '<div class="status-ok">📝 レポートを生成しました</div>'
 
+@ensure_data('export-result', 'データがありません')
 def export_all_data(event):
     global g_df_processed
-    if not require_data('export-result', 'データがありません'):
-        return
     
     # CSVデータを生成
     csv_data = g_df_processed.to_csv(index=False)
@@ -9813,9 +10220,9 @@ def export_all_data(event):
     
     document.getElementById('export-result').innerHTML = '<div class="status-ok">📦 全データをクリップボードにコピーしました</div>'
 
+@ensure_data('data-preview')
 def show_data_preview(event=None):
     global g_df_processed, g_col_map
-    if not require_data(): return
     
     df = g_df_processed
     title_col = g_col_map.get('title', df.columns[0])
@@ -9824,8 +10231,8 @@ def show_data_preview(event=None):
     html = '<table class="data-table"><tr><th>#</th><th>年</th><th>タイトル</th><th>出願人</th></tr>'
     for i, (_, row) in enumerate(df.head(20).iterrows(), 1):
         apps = row.get('applicant_list', [])
-        app_str = apps[0][:20] if apps else '-'
-        title = str(row.get(title_col, ''))[:40]
+        app_str = html.escape(str(apps[0])[:20]) if apps else '-'
+        title = html.escape(str(row.get(title_col, ''))[:40])
         html += f'<tr><td>{i}</td><td>{row.get("year", "-")}</td><td>{title}</td><td>{app_str}</td></tr>'
     html += '</table>'
     document.getElementById('data-preview').innerHTML = html
