@@ -2422,6 +2422,7 @@
         
         
         const PRODUCTION_MOD = true;
+        let currentPage = null;
         
         
         function debugLog(...args) {
@@ -3165,14 +3166,16 @@
             
             document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
             
+            const delay = currentPage && currentPage.id !== 'page-' + page ? 150 : 0;
             setTimeout(() => {
                 const targetPage = document.getElementById('page-' + page);
                 if (targetPage) {
                     targetPage.classList.remove('hidden');
                     targetPage.classList.add('fade-in');
                     setTimeout(() => targetPage.classList.remove('fade-in'), 300);
+                    currentPage = targetPage;
                 }
-            }, currentPage && currentPage.id !== 'page-' + page ? 150 : 0);
+            }, delay);
             
             document.querySelectorAll('.nav-btn').forEach(btn => {
                 if (btn.getAttribute('onclick')?.includes("'" + page + "'")) {
