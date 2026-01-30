@@ -2491,6 +2491,7 @@
             const enabledTypes = ['trend', 'trend_line', 'applicant', 'bubble'];
             let enabled = enabledTypes.includes(window.appState.chartType);
             
+            if (window.appState.chartType === 'trend_line') {
                 const lineMode = document.getElementById('atlas-line-mode')?.value || 'overall';
                 enabled = enabled && lineMode === 'overall';
             }
@@ -2723,7 +2724,7 @@
                 }).join('');
             }
             if (fill) {
-                const done = modules.filter(m => stateMap[m] === '完了).length';
+                const done = modules.filter(m => stateMap[m] === '完了').length;
                 const pct = Math.round((done / modules.length) * 100);
                 fill.style.width = `${pct}%`;
             }
@@ -2774,19 +2775,19 @@
                 const sec = Math.floor((Date.now() - startTime) / 1000);
                 const min = Math.floor(sec / 60);
                 const s = sec % 60;
-                const timeStr = min > 0 ? `${min}分{s}秒` : `${s}秒`;
+                const timeStr = min > 0 ? `${min}分${s}秒` : `${s}秒`;
                 
                 const pyFuncReady = typeof window.pyLoadHeavyPackages === 'function';
                 if (!pyFuncReady) {
-                    if (status) status.textContent = `Python起動不明... (${timeStr})`;
-                    updateHeavyProgress(`Python起動不明 (${timeStr})`, { 'scikit-learn': '不明, 'networkx': '不明 });
-                    updateModuleProgress('core', `Python起動不明 (${timeStr})`, null);
+                    if (status) status.textContent = `Python起動待機中... (${timeStr})`;
+                    updateHeavyProgress(`Python起動待機中 (${timeStr})`, { 'scikit-learn': '待機中', 'networkx': '待機中' });
+                    updateModuleProgress('core', `Python起動待機中 (${timeStr})`, null);
                 }
             };
             
             window.__heavyElapsedTimer = setInterval(updateElapsed, 1000);
             
-            updateModuleProgress('core', 'Python起動不明', null);
+            updateModuleProgress('core', 'Python起動待機中', null);
             ['mega','saturn','explorer','crew'].forEach(key => {
                 updateModuleProgress(key, '準備中', 0);
             });
@@ -2800,7 +2801,7 @@
                         const sec = Math.floor((Date.now() - pkgStartTime) / 1000);
                         const min = Math.floor(sec / 60);
                         const s = sec % 60;
-                        const timeStr = min > 0 ? `${min}分{s}秒` : `${s}秒`;
+                        const timeStr = min > 0 ? `${min}分${s}秒` : `${s}秒`;
                         if (status) status.textContent = `パッケージ読み込み中... (${timeStr})`;
                     }, 1000);
                     
@@ -2810,6 +2811,7 @@
                     window.__heavyPackagesLoading = false;
                     window.__heavyRetryCount = (window.__heavyRetryCount || 0) + 1;
                     if (window.__heavyRetryCount < 60) {
+                        setTimeout(() => {
                             window.__heavyPackagesLoading = false;
                             requestHeavyPackages();
                         }, 1000);
@@ -2859,8 +2861,8 @@
                             'col-date': ['出願日','Date','applicationDate','出願年'],
                             'col-applicant': ['出願人','Applicant','applicant','出願人/権利者'],
                             'col-ipc': ['IPC','FI','ipc','Fターム'],
-                            'col-inventor': ['発明者,'Inventor','inventor'],
-                            'col-status': ['IPC','FI','ステータス','Status','status','法的状況,'審査状況]
+                            'col-inventor': ['発明者','Inventor','inventor'],
+                            'col-status': ['IPC','FI','ステータス','Status','status','法的状況','審査状況']
                         };
                         Object.keys(autoMap).forEach(selId => {
                             const sel = document.getElementById(selId);
@@ -3105,10 +3107,10 @@
             }
 
             const icons = {
-                success: '✁,
-                warning: '⚠,
-                error: '❁,
-                info: 'ℹ
+                success: '✅',
+                warning: '⚠️',
+                error: '❌',
+                info: 'ℹ️'
             };
 
             const toast = document.createElement('div');
@@ -3326,6 +3328,7 @@
                 .duration(800)
                 .attr('opacity', 1);
             
+            g.selectAll('.sparkline-dot')
                 .data(data)
                 .enter()
                 .append('circle')
@@ -3399,6 +3402,7 @@
                     return t => arc(interpolate(t));
                 });
             
+            paths.on('mouseover', function(event, d) {
                 d3.select(this)
                     .transition()
                     .duration(200)
@@ -3411,6 +3415,7 @@
                     .attr('d', arc);
             });
             
+            g.append('text')
                 .attr('text-anchor', 'middle')
                 .attr('dy', '0.1em')
                 .attr('fill', '#e0e6ed')
@@ -3462,6 +3467,7 @@
             const width = (container.clientWidth || 250) - margin.left - margin.right;
             const height = (container.clientHeight || 100) - margin.top - margin.bottom;
             
+            const entries = Object.entries(topIPC)
                 .sort((a, b) => b[1] - a[1])
                 .slice(0, 5);
             const data = entries.map(([name, value]) => ({ name, value }));
@@ -3604,6 +3610,7 @@
                 dropZone.classList.add('drag-over');
             });
             
+            dropZone.addEventListener('dragleave', (e) => {
                 e.preventDefault();
                 dropZone.classList.remove('drag-over');
             });
@@ -3627,6 +3634,7 @@
                 }
             });
             
+            if (fileInputHome) {
                 fileInputHome.addEventListener('change', (e) => {
                     const file = e.target.files[0];
                     if (file) {
@@ -3646,7 +3654,7 @@
             const status = document.getElementById('home-file-status');
             const launchBtn = document.getElementById('home-launch-btn');
             if (status) {
-                status.innerHTML = `<span style="color: #81c784;">✁/span> ${filename} を読み込みました`;
+                status.innerHTML = `<span style="color: #81c784;">✅</span> ${filename} を読み込みました`;
             }
             if (launchBtn) {
                 launchBtn.disabled = false;
@@ -3895,6 +3903,7 @@
                                 .style('font-size', `${d.size * 1.15}px`)
                                 .style('filter', 'brightness(1.3)');
                             
+                            d3.select(container)
                                 .append('div')
                                 .attr('class', 'wc-tooltip')
                                 .style('position', 'absolute')
@@ -3968,6 +3977,7 @@
                 
                 const g = svg.append('g').attr('transform', 'translate(0, 30)');
                 
+                const simulation = d3.forceSimulation(nodes)
                     .force('link', d3.forceLink(links).id(d => d.id).distance(120).strength(0.3))
                     .force('charge', d3.forceManyBody().strength(-400))
                     .force('center', d3.forceCenter(width / 2, (height - 30) / 2))
@@ -4001,6 +4011,7 @@
                     .style('stroke-width', 1.5)
                     .style('filter', 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))');
                 
+                node.append('text')
                     .text(d => d.label.length > 12 ? d.label.slice(0, 12) + '…' : d.label)
                     .attr('dy', 4)
                     .attr('text-anchor', 'middle')
@@ -4011,6 +4022,7 @@
                     .style('text-shadow', '0 1px 3px rgba(0,0,0,0.8), 0 0 8px rgba(0,0,0,0.6)')
                     .style('pointer-events', 'none');
                 
+                node.on('mouseover', function(event, d) {
                     d3.select(this).select('circle')
                         .transition().duration(150)
                         .attr('r', d.size * 1.3)
@@ -4157,6 +4169,7 @@
                     .delay((d, i) => i * 30)
                     .attr('width', d => x(d.value));
                 
+                bars.on('mouseover', function(event, d) {
                     d3.select(this)
                         .transition().duration(100)
                         .style('filter', 'brightness(1.3)')
@@ -4239,6 +4252,7 @@
                 const innerWidth = width - margin.left - margin.right;
                 const innerHeight = height - margin.top - margin.bottom;
                 
+                const sankey = d3.sankey()
                     .nodeWidth(20)
                     .nodePadding(12)
                     .extent([[0, 0], [innerWidth, innerHeight]]);
@@ -4288,6 +4302,7 @@
                             .attr('stroke-opacity', 0.9)
                             .attr('stroke-width', d.width + 2);
                         
+                        d3.select('body').append('div')
                             .attr('class', 'sankey-tooltip')
                             .style('position', 'absolute')
                             .style('background', 'rgba(13, 27, 42, 0.95)')
@@ -4298,7 +4313,7 @@
                             .style('font-size', '12px')
                             .style('pointer-events', 'none')
                             .style('z-index', '9999')
-                            .html(`<strong>${d.source.name}</strong> ↁ<strong>${d.target.name}</strong><br/>件数: ${d.value}`)
+                            .html(`<strong>${d.source.name}</strong> → <strong>${d.target.name}</strong><br/>件数: ${d.value}`)
                             .style('left', (event.pageX + 15) + 'px')
                             .style('top', (event.pageY - 10) + 'px');
                     })
@@ -4352,6 +4367,9 @@
         
         window.bubbleRaceState = { running: false, timer: null, yearIndex: 0, initialized: false };
         
+        window.bubbleRacePlay = function() {
+            const btn = document.getElementById('race-play-btn');
+            if (!window.bubbleRaceState.initialized) {
                 debugLog('BubbleRace: Initializing data first...');
                 if (btn) btn.textContent = '準備中...';
                 if (window.pyShowBubbleRace) {
@@ -4512,6 +4530,7 @@
                     step();
                 };
                 
+                window.bubbleRacePlay = function() {
                     if (window.bubbleRaceState.yearIndex >= years.length - 1) {
                         window.bubbleRaceState.yearIndex = 0;
                         update(0);
@@ -4701,6 +4720,7 @@
             
             title.innerHTML = `📋 ${nodeName} <span style="font-weight: normal; font-size: 0.85rem;">(${nodeValue}件)</span>`;
             
+            if (window.circlePackPatents && window.circlePackPatents[nodeName]) {
                 const patents = window.circlePackPatents[nodeName];
                 let html = '<div style="display: flex; flex-direction: column; gap: 0.5rem;">';
                 
@@ -4736,6 +4756,7 @@
                     html += `<div style="color: #888; font-size: 0.8rem; margin-top: 1rem; text-align: center;">💡 個別案件を見るには下位階層をダブルクリック</div>`;
                     content.innerHTML = html;
                 } else {
+                    content.innerHTML = `
                         <div style="color: #888; text-align: center; padding: 2rem;">
                             <div style="font-size: 2rem; margin-bottom: 0.5rem;">📊</div>
                             <div>${nodeName}: ${nodeValue}件</div>
@@ -4798,6 +4819,7 @@
                     .innerRadius(d => d.y0)
                     .outerRadius(d => d.y1 - 1);
                 
+                g.selectAll('path')
                     .data(root.descendants().filter(d => d.depth))
                     .enter()
                     .append('path')
@@ -4810,6 +4832,7 @@
                     .on('mouseover', function(event, d) {
                         d3.select(this).attr('opacity', 0.8);
                         
+                        d3.select('body').append('div')
                             .attr('class', 'd3-tooltip')
                             .style('position', 'absolute')
                             .style('background', 'rgba(13, 27, 42, 0.95)')
@@ -4906,6 +4929,7 @@
                 const names = data.names;
                 const matrix = data.matrix;
                 
+                const chord = d3.chord()
                     .padAngle(0.05)
                     .sortSubgroups(d3.descending);
                 
@@ -4915,6 +4939,7 @@
                     .domain(d3.range(names.length))
                     .range(d3.schemeTableau10);
                 
+                const arc = d3.arc()
                     .innerRadius(innerRadius)
                     .outerRadius(outerRadius);
                 
@@ -4934,6 +4959,7 @@
                     .delay((d, i) => i * 50)
                     .attr('opacity', 1);
                 
+                groups.append('text')
                     .each(d => { d.angle = (d.startAngle + d.endAngle) / 2; })
                     .attr('dy', '0.35em')
                     .attr('transform', d => `
@@ -4971,6 +4997,7 @@
                         d3.selectAll('.d3-tooltip').remove();
                     });
                 
+                const ribbon = d3.ribbon()
                     .radius(innerRadius);
                 
                 g.append('g')
@@ -5121,6 +5148,7 @@
                     .style('stroke', '#666')
                     .style('fill', '#888');
                 
+                const legend = svg.append('g')
                     .attr('transform', `translate(${width - margin.right + 10}, 30)`);
                 
                 keys.forEach((key, i) => {
@@ -5177,10 +5205,12 @@
                 
                 const root = d3.hierarchy(data);
                 
+                const cluster = d3.cluster()
                     .size([innerHeight, innerWidth - 100]);
                 
                 cluster(root);
                 
+                g.selectAll('.link')
                     .data(root.links())
                     .enter()
                     .append('path')
@@ -5204,6 +5234,7 @@
                     .delay((d, i) => i * 20)
                     .attr('stroke-dashoffset', 0);
                 
+                const node = g.selectAll('.node')
                     .data(root.descendants())
                     .enter()
                     .append('g')
@@ -5221,7 +5252,7 @@
                     .delay((d, i) => 800 + i * 30)
                     .attr('opacity', 1);
                 
-                    .append('text')
+                node.append('text')
                     .attr('dy', '0.35em')
                     .attr('x', 10)
                     .style('fill', '#e0e1dd')
@@ -5252,13 +5283,14 @@
                 return;
             }
             
+            if (chartDiv.data) {
                 Plotly.toImage(chartDiv, {format: 'png', width: 1200, height: 800})
                     .then(dataUrl => {
                         addSnapshotToGallery(chartName, dataUrl);
                     })
                     .catch(err => {
                         console.error('Snapshot error:', err);
-                        alert('スナップショチ保存に失敗しました');
+                        alert('スナップショット保存に失敗しました');
                     });
                 return;
             }
@@ -6059,17 +6091,17 @@ class UIHelper:
     @staticmethod
     def set_button_loading(button_id: str, loading: bool, loading_text: str = ''):
         """ボタンのローディング状態を設定。"""
-        js.setButtonLoading(button_id, loading, loading_text)
+        window.setButtonLoading(button_id, loading, loading_text)
     
     @staticmethod
     def show_chart_loading(container_id: str, show: bool, message: str = '読み込み中...'):
         """チャートコンテナにローディングオーバーレイを表示"""
-    js.showChartLoading(container_id, show, message)
+        window.showChartLoading(container_id, show, message)
     
     @staticmethod
     def show_status(container_id: str, status_type: str, title: str, detail: str = ''):
         """
-        改善れたステータスメッセージを表示
+        改善されたステータスメッセージを表示
         
         Args:
             container_id: コンテナのID
@@ -6077,30 +6109,30 @@ class UIHelper:
             title: タイトル
             detail: 詳細メッセージ
         """
-    js.showStatusMessage(container_id, status_type, title, detail)
+        window.showStatusMessage(container_id, status_type, title, detail)
     
     @staticmethod
     def show_error(container_id: str, title: str, detail: str = ''):
         """エラーメッセージを表示"""
-    UIHelper.show_status(container_id, 'error', title, detail)
+        UIHelper.show_status(container_id, 'error', title, detail)
     
     @staticmethod
     def show_warning(container_id: str, title: str, detail: str = ''):
         """警告メッセージを表示"""
-    UIHelper.show_status(container_id, 'warning', title, detail)
+        UIHelper.show_status(container_id, 'warning', title, detail)
     
     @staticmethod
     def show_success(container_id: str, title: str, detail: str = ''):
         """成功メッセージを表示"""
-    UIHelper.show_status(container_id, 'success', title, detail)
+        UIHelper.show_status(container_id, 'success', title, detail)
     
     @staticmethod
     def show_info(container_id: str, title: str, detail: str = ''):
-        """惁メッセージを表示"""
-    UIHelper.show_status(container_id, 'info', title, detail)
+        """情報メッセージを表示"""
+        UIHelper.show_status(container_id, 'info', title, detail)
 
 # ============================================================
-# データ処理のルパ関数
+# データ処理のヘルパー関数
 # ============================================================
 
 def get_filtered_df(year_filter: bool = True) -> pd.DataFrame | None:
