@@ -9315,7 +9315,8 @@ def show_radar(event):
         document.getElementById('radar-chart').innerHTML = '<div class="status-warn">企業を選択してください</div>'
         return
     
-    # 企業のIPC分計算    def get_ipc_dist(company_name):
+    # 企業のIPC分布を計算
+    def get_ipc_dist(company_name):
         mask = df['applicant_list'].apply(lambda x: company_name in x if x else False)
         subset = df[mask]
         if axis_type == 'section':
