@@ -3880,6 +3880,7 @@
                         return (Math.random() > 0.5 ? 45 : -45);
                     })
                     .font('Impact, Arial Black, sans-serif')
+                    .fontSize(d => d.size)
                     .spiral('archimedean')
                     .on('end', draw);
                 
@@ -9046,7 +9047,8 @@ def show_circle_packing(event):
             if child_patents:
                 patent_data[child_key] = child_patents[:100]
     
-    # JavaScriptに案件データを渡い    window.circlePackPatents = window.JSON.parse(json.dumps(patent_data))
+    # JavaScriptに案件データを渡す
+    window.circlePackPatents = window.JSON.parse(json.dumps(patent_data))
     
     # D3.jsでサークルパッキングを描画
     window.drawCirclePacking("circle-chart", json.dumps(root_data))
