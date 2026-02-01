@@ -7614,10 +7614,11 @@ def draw_atlas(event):
                         color=COLOR_SEQUENCE[0]
                     )]
                     layout = ChartHelper.create_layout(
-                        title=f"件数推移折れ線！{start}-{end})",
+                        title=f"件数推移折れ線 ({start}-{end})",
                         xaxis={"title": "出願年"},
                         yaxis={"title": "件数", "rangemode": "tozero"}
                     )
+                ChartHelper.draw("atlas-chart", traces, layout)
             else:
                 sel = document.getElementById('atlas-line-applicants')
                 selected = [opt.value for opt in sel.selectedOptions]
