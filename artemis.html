@@ -6347,6 +6347,8 @@ STOPWORDS = frozenset({
     # Japanese common words
     '前記', '上記', '本発明', '実施形態', '方法', '装置', '手段', 'これ', 'それ', 'ため', 'こと',
     '場合', '等', 'も', '発明', '技術', '構成', '本実施', '一実施', '所定', '特定',
+    # Patent section/status terms
+    '要約', '課題', '効果', '目的', '提供', '解決手段', '修正有', '前記第', '選択図', '独立',
     # English common words
     'the', 'a', 'an', 'and', 'or', 'of', 'to', 'in', 'for', 'with', 'on', 'is', 'are', 'be',
     # Japanese functional words
@@ -6445,6 +6447,9 @@ def tokenize(text: str) -> list[str]:
     # Filter out tokens ending with stopword characters
     stopword_chars = '及又並等のにを'
     filtered_jp = [w for w in jp_tokens if not any(w.endswith(c) for c in stopword_chars)]
+    
+    # 「前記○○」から「前記」を除去して「○○」にする
+    filtered_jp = [w[2:] if w.startswith('前記') and len(w) > 2 else w for w in filtered_jp]
     
     return [w for w in filtered_jp + en_tokens if w not in STOPWORDS and len(w) >= 2]
 
@@ -6588,6 +6593,8 @@ PATENT_STOPWORDS = [
     'その', 'この', 'これら', 'それら', 'これ', 'それ', 'どの', 'どれ',
     '複数', '所定', '所望', '適宜', '任意', '特定',
     'という', 'として', 'による', 'により', 'によって', 'を有する', 'を有し',
+    # Additional patent section/status terms
+    '提供', '解決手段', '修正有', '目的',
     # English patent formal terms
     'said', 'wherein', 'thereof', 'therein', 'thereto', 'thereby',
     'comprising', 'comprises', 'comprised', 'including', 'includes',
@@ -9905,7 +9912,11 @@ def show_ngram(event):
         words = tokens.split()
         if len(words) >= n:
             for i in range(len(words) - n + 1):
-                ngram = ' '.join(words[i:i+n])
+                ngram_words = words[i:i+n]
+                # 同じ単語の繰り返し（例: "cmm cmm"）を除外
+                if len(set(ngram_words)) == 1:
+                    continue
+                ngram = ' '.join(ngram_words)
                 ngram_counter[ngram] += 1
     
     top_ngrams = ngram_counter.most_common(top_n)
