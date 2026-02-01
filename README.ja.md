@@ -12,14 +12,15 @@
 - **作成者**: Hajime Kumami
 - **ベースプロジェクト**: [APOLLO](https://github.com/shibayamalicht/apollo-patent-analysis) by しばやま (shibayamalicht)
 
-> ⚠️ **注意**: ARTEMISはAPOLLOの軽量版であり、一部機能（SBERT、EAGLE、NEBULA等）は含まれていません。フル機能が必要な場合は[APOLLO](https://github.com/shibayamalicht/apollo-patent-analysis)をご利用ください。
+> ⚠️ **注意**: ARTEMISはAPOLLOの軽量版であり、一部機能（EAGLE、NEBULA等）は含まれていません。フル機能が必要な場合は[APOLLO](https://github.com/shibayamalicht/apollo-patent-analysis)をご利用ください。
 
 ## ✨ 特徴
 
 - 🌐 **完全ブラウザベース**: サーバー不要、HTMLファイルを開くだけで動作
 - 📊 **豊富な可視化**: Plotly.js + D3.jsによるインタラクティブチャート
+- 🤖 **SBERT埋め込み**: Transformers.jsによる意味的クラスタリング (all-MiniLM-L6-v2)
 - 🔍 **高度な論理検索**: AND/OR/NEAR/ADJ演算子対応
-- 🗺️ **技術マップ**: TF-IDF + PCA/t-SNEによるランドスケープ可視化
+- 🗺️ **技術マップ**: TF-IDF/SBERT + PCA/t-SNEによるランドスケープ可視化（ラベルドラッグ、パン/ズーム対応）
 - 🔗 **ネットワーク分析**: 発明者・出願人の関係性を可視化
 - ☁️ **ワードクラウド**: D3-cloudによるキーワード可視化
 - 📈 **多彩なチャート**: 棒グラフ、折れ線、バブル、Treemap、ライフサイクル分析
@@ -61,6 +62,7 @@
 - **Plotly.js 2.27.0** - インタラクティブチャート
 - **D3.js v7** - ワードクラウド・ネットワーク・Sankey図
 - **PapaParse 5.4.1** - CSV解析
+- **Transformers.js** - ブラウザでのSBERT埋め込み (all-MiniLM-L6-v2)
 
 ### Python (Pyodide)
 - **pandas** - データ処理
@@ -103,3 +105,4 @@ MIT License - 詳細は [LICENSE.txt](LICENSE.txt) を参照
 - [Plotly.js](https://plotly.com/javascript/) - インタラクティブチャート
 - [D3.js](https://d3js.org/) - データ可視化ライブラリ
 - [PapaParse](https://www.papaparse.com/) - CSV解析
+- [Transformers.js](https://huggingface.co/docs/transformers.js/) - ブラウザでのMLモデル実行

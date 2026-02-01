@@ -12,14 +12,15 @@
 - **Author**: Hajime Kumami
 - **Based on**: [APOLLO](https://github.com/shibayamalicht/apollo-patent-analysis) by shibayamalicht
 
-> ⚠️ **Note**: ARTEMIS is a lightweight version of APOLLO. Some features (SBERT, EAGLE, NEBULA, etc.) are not included. For full functionality, please use [APOLLO](https://github.com/shibayamalicht/apollo-patent-analysis).
+> ⚠️ **Note**: ARTEMIS is a lightweight version of APOLLO. Some features (EAGLE, NEBULA, etc.) are not included. For full functionality, please use [APOLLO](https://github.com/shibayamalicht/apollo-patent-analysis).
 
 ## ✨ Features
 
 - 🌐 **Fully Browser-Based**: No server required — just open the HTML file
 - 📊 **Rich Visualization**: Interactive charts with Plotly.js + D3.js
+- 🤖 **SBERT Embeddings**: Semantic clustering with Transformers.js (all-MiniLM-L6-v2)
 - 🔍 **Advanced Boolean Search**: AND/OR/NEAR/ADJ operators supported
-- 🗺️ **Technology Map**: Landscape visualization with TF-IDF + PCA/t-SNE
+- 🗺️ **Technology Map**: Landscape visualization with TF-IDF/SBERT + PCA/t-SNE (draggable labels, pan/zoom)
 - 🔗 **Network Analysis**: Visualize inventor/applicant relationships
 - ☁️ **Word Cloud**: Keyword visualization with D3-cloud
 - 📈 **Various Charts**: Bar, line, bubble, treemap, lifecycle analysis
@@ -61,6 +62,7 @@
 - **Plotly.js 2.27.0** - Interactive charts
 - **D3.js v7** - Word cloud, network, Sankey diagrams
 - **PapaParse 5.4.1** - CSV parsing
+- **Transformers.js** - SBERT embeddings in browser (all-MiniLM-L6-v2)
 
 ### Python (Pyodide)
 - **pandas** - Data processing
@@ -103,3 +105,4 @@ MIT License - See [LICENSE.txt](LICENSE.txt) for details
 - [Plotly.js](https://plotly.com/javascript/) - Interactive charts
 - [D3.js](https://d3js.org/) - Data visualization library
 - [PapaParse](https://www.papaparse.com/) - CSV parsing
+- [Transformers.js](https://huggingface.co/docs/transformers.js/) - ML models in browser
