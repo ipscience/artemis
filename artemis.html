@@ -4169,12 +4169,12 @@
                 
                 
                 // ランドスケープ用背景色が指定されている場合はテンプレートを無効化
-                const isLandscapeBg = layout.paper_bgcolor === '#0d1b2a' || layout.plot_bgcolor === '#0d1b2a';
+                const isLandscapeBg = layout.paper_bgcolor === '#112240' || layout.plot_bgcolor === '#112240';
                 if (isLandscapeBg) {
                     // Disable default template and use dark blue background
                     layout.template = {};
-                    layout.paper_bgcolor = '#0d1b2a';
-                    layout.plot_bgcolor = '#0d1b2a';
+                    layout.paper_bgcolor = '#112240';
+                    layout.plot_bgcolor = '#112240';
                 } else {
                     layout.template = 'plotly_dark';
                     if (!layout.paper_bgcolor || layout.paper_bgcolor === 'rgba(0,0,0,0)') {
@@ -8920,7 +8920,7 @@ def run_saturn_tfidf(event):
                 "type": "histogram2dcontour",
                 "x": x_all,
                 "y": y_all,
-                "colorscale": "Blues",
+                "colorscale": [[0, "#112240"], [0.25, "#1a3a5c"], [0.5, "#2a5a8c"], [0.75, "#4488bb"], [1.0, "#77bbee"]],
                 "reversescale": False,
                 "showscale": False,
                 "autocontour": True,
@@ -9074,8 +9074,8 @@ def run_saturn_tfidf(event):
             showlegend=True,
             legend={"orientation": "h", "y": -0.1},
             annotations=cluster_annotations if show_labels else [],
-            paper_bgcolor="#0d1b2a",
-            plot_bgcolor="#0d1b2a"
+            paper_bgcolor="#112240",
+            plot_bgcolor="#112240"
         )
         ChartHelper.draw("saturn-chart", traces, layout, editable_annotations=show_labels)
         
@@ -9204,7 +9204,7 @@ def run_saturn_sbert():
                         "type": "histogram2dcontour",
                         "x": x_all,
                         "y": y_all,
-                        "colorscale": "Blues",
+                        "colorscale": [[0, "#112240"], [0.25, "#1a3a5c"], [0.5, "#2a5a8c"], [0.75, "#4488bb"], [1.0, "#77bbee"]],
                         "reversescale": False,
                         "showscale": False,
                         "autocontour": True,
@@ -9390,8 +9390,8 @@ def run_saturn_sbert():
                     showlegend=True,
                     legend={"orientation": "h", "y": -0.1},
                     annotations=cluster_annotations if show_labels else [],
-                    paper_bgcolor="#0d1b2a",
-                    plot_bgcolor="#0d1b2a"
+                    paper_bgcolor="#112240",
+                    plot_bgcolor="#112240"
                 )
                 ChartHelper.draw("saturn-chart", traces, layout, editable_annotations=show_labels)
                 
