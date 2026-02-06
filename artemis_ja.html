@@ -1570,6 +1570,7 @@
                     
                     <div id="mission-tab-launch" class="tab-content">
                         <p style="margin-bottom: 0.8rem; font-size: 0.9rem;">処理状況をここに表示します。ファイル読み込み時またはカラム設定変更時に自動で分析を開始します。</p>
+                        <button id="trigger-relaunch" style="display:none"></button>
                         <div class="progress-bar" style="display: none;" id="launch-progress">
                             <div class="progress-fill" id="launch-progress-fill" style="width: 0%;"></div>
                         </div>
@@ -2709,9 +2710,6 @@
         /** @type {boolean} Python環境が準備完了したか */
         window.__pyReady = false;
 
-        /** @type {boolean} データが読み込まれたか */
-        window.__dataLoaded = false;
-
         /**
          * Python環境の準備状態を設定
          * @param {boolean} isReady - Python環境が準備完了したか
@@ -2740,10 +2738,6 @@
             }
             
             window.__pyReady = isReady;
-            
-            if (isReady && window.pyodide_globals && window.pyodide_globals.launch_engine) {
-                window.pyodide_globals.launch_engine(null);
-            }
             
             if (isReady) {
                 requestHeavyPackages();
@@ -3572,9 +3566,8 @@
                 const status = document.getElementById('launch-status');
                 if (status) status.innerHTML = '<div class="status-info">🔄 カラム設定が変更されました。再処理中...</div>';
                 showTab('mission', 'launch');
-                if (window.pyodide_globals && window.pyodide_globals.launch_engine) {
-                    window.pyodide_globals.launch_engine(null);
-                }
+                const triggerBtn = document.getElementById('trigger-relaunch');
+                if (triggerBtn) triggerBtn.click();
             }, 600);
         }
 
@@ -7113,8 +7106,6 @@ async def on_file_change(event):
         
         document.getElementById('file-info').textContent = f'📂 {file.name} ({len(df):,}件)'
         
-        # JS側からlaunch_engineを呼べるようにする
-        window.pyodide_globals.launch_engine = create_proxy(launch_engine)
         window.__dataLoaded = True
         # ファイル読み込み後、自動的に分析を開始
         launch_engine(None)
@@ -11037,6 +11028,7 @@ core_cancel_proxy = create_proxy(core_cancel_edit)
 g_proxies.extend([file_proxy, launch_proxy, atlas_proxy, core_search_proxy, core_ai_proxy, core_import_proxy, core_run_proxy, core_reanalyze_proxy, core_map_proxy, core_add_proxy, core_delete_proxy, core_update_proxy, core_edit_proxy, core_cancel_proxy])
 
 document.getElementById('file-input').addEventListener('change', file_proxy)
+document.getElementById('trigger-relaunch').addEventListener('click', launch_proxy)
 document.getElementById('btn-atlas').addEventListener('click', atlas_proxy)
 document.getElementById('use-status-breakdown').addEventListener('change', atlas_proxy)
 document.getElementById('btn-core-search').addEventListener('click', core_search_proxy)
