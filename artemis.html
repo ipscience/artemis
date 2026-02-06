@@ -721,6 +721,12 @@
             justify-content: center;
             align-items: center;
             z-index: 9999;
+            opacity: 1;
+            transition: opacity 0.6s ease;
+        }
+        #init-overlay.fade-out {
+            opacity: 0;
+            pointer-events: none;
         }
 
         #init-overlay h1 {
@@ -860,9 +866,9 @@
         
         .progress-bar {
             width: 100%;
-            height: 6px;
+            height: 14px;
             background: rgba(255,255,255,0.1);
-            border-radius: 3px;
+            border-radius: 7px;
             overflow: hidden;
             margin: 0.5rem 0;
         }
@@ -871,6 +877,12 @@
             height: 100%;
             background: linear-gradient(90deg, var(--color-primary) 0%, var(--color-accent) 100%);
             transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            font-size: 0.65rem;
+            line-height: 14px;
+            color: #fff;
+            text-align: center;
+            white-space: nowrap;
+            overflow: visible;
         }
 
         .checkbox-group { 
@@ -2448,7 +2460,7 @@
                     <div id="report-output" style="margin-top: 1rem; display: none;">
                         <h4>📋 Auto-generated Report</h4>
                         <textarea id="report-text" rows="15" style="width: 100%; background: rgba(0,0,0,0.3); color: #e0e1dd; border: 1px solid rgba(255,255,255,0.2); border-radius: 5px; padding: 0.5rem;"></textarea>
-                        <button class="btn btn-secondary" onclick="navigator.clipboard.writeText(document.getElementById('report-text').value); alert('Copied');" style="margin-top: 0.3rem;">📋 Copy Report</button>
+                        <button class="btn btn-secondary" onclick="navigator.clipboard.writeText(document.getElementById('report-text').value); showToast('📋 Copied to clipboard', 'success');" style="margin-top: 0.3rem;">📋 Copy Report</button>
                     </div>
                     
                     <div style="margin-top: 1.5rem;">
@@ -2781,7 +2793,10 @@
             
             ids.forEach(id => {
                 const el = document.getElementById(id);
-                if (el) el.disabled = !isReady;
+                if (el) {
+                    el.disabled = !isReady;
+                    el.title = isReady ? '' : 'Loading additional modules…';
+                }
             });
             
             if (isReady) {
@@ -3526,6 +3541,13 @@
          * @param {string} page - 表示するページのID (例: 'home', 'atlas', 'core')
          */
         function showPage(page) {
+            // Guard: require data for analysis pages
+            const safePages = ['home', 'mission'];
+            if (!safePages.includes(page) && !window.__dataLoaded) {
+                showToast('⚠️ Please load a CSV file first', 'warning');
+                return;
+            }
+
             // すべてのページを隠す
             document.querySelectorAll('.page').forEach(p => {
                 if (p.id !== 'page-' + page) {
@@ -4031,6 +4053,7 @@
                     }
                     updateHomeFileStatus(files[0].name);
                     showToast(`📄 Loaded ${files[0].name}`, 'success');
+                    setTimeout(() => { showPage('mission'); showTab('mission', 'launch'); }, 1000);
                 } else {
                     showToast('Only CSV files are supported', 'error');
                 }
@@ -4047,6 +4070,7 @@
                             fileInput.dispatchEvent(new Event('change', { bubbles: true }));
                         }
                         updateHomeFileStatus(file.name);
+                        setTimeout(() => { showPage('mission'); showTab('mission', 'launch'); }, 1000);
                     }
                 });
             }
@@ -5880,7 +5904,7 @@
         function saveSnapshot(chartId, chartName) {
             const chartDiv = document.getElementById(chartId);
             if (!chartDiv) {
-                alert('保存するチャートがありません');
+                showToast('⚠️ No chart to save', 'warning');
                 return;
             }
             
@@ -5891,7 +5915,7 @@
                     })
                     .catch(err => {
                         console.error('Snapshot error:', err);
-                        alert('スナップショット保存に失敗しました');
+                        showToast('❌ Failed to save snapshot', 'error');
                     });
                 return;
             }
@@ -5922,18 +5946,18 @@
                     
                     img.onerror = function() {
                         console.error('SVG to PNG conversion failed');
-                        alert('スナップショット保存に失敗しました');
+                        showToast('❌ Failed to save snapshot', 'error');
                     };
                     
                     img.src = URL.createObjectURL(svgBlob);
                 } catch(e) {
                     console.error('SVG snapshot error:', e);
-                    alert('スナップショット保存に失敗しました');
+                    showToast('❌ Failed to save snapshot', 'error');
                 }
                 return;
             }
             
-            alert('保存するチャートがありません');
+            showToast('⚠️ No chart to save', 'warning');
         }
 
         /**
@@ -5951,7 +5975,7 @@
             };
             window.snapshotList.push(snapshot);
             updateSnapshotGallery();
-            alert(`📸 スナップショットを保存しました: ${chartName}`);
+            showToast(`📸 Snapshot saved: ${chartName}`, 'success');
         }
 
         /** スナップショットギャラリーの表示を更新 */
@@ -6010,7 +6034,11 @@
          * @param {number} pct - 進捗パーセンテージ (0-100)
          */
         function updateProgress(pct) {
-            document.getElementById('launch-progress-fill').style.width = pct + '%';
+            const fill = document.getElementById('launch-progress-fill');
+            if (fill) {
+                fill.style.width = pct + '%';
+                fill.textContent = pct > 0 ? Math.round(pct) + '%' : '';
+            }
         }
 
         // ─────────────────────────────────────────────────────────────
@@ -6026,7 +6054,12 @@
         syncAtlasControls();
         setTimeout(() => {
             const overlay = document.getElementById('init-overlay');
-            if (overlay) overlay.style.display = 'none';
+            if (overlay) {
+                overlay.classList.add('fade-out');
+                overlay.addEventListener('transitionend', () => {
+                    overlay.style.display = 'none';
+                }, { once: true });
+            }
         }, 1200);
 
         // Column change auto-relaunch listeners
@@ -11097,7 +11130,10 @@ window.pyShowBubbleRace = create_proxy(show_bubble_race)
 # ============================================================
 
 # 読み込みオーバーレイを非表示にする
-document.getElementById('init-overlay').style.display = 'none'
+overlay_el = document.getElementById('init-overlay')
+if overlay_el:
+    overlay_el.classList.add('fade-out')
+    # display:none is handled by CSS transitionend
 debugLog('[ARTEMIS] Pythonエンジンの初期化が完了しました')
 
 # JavaScriptにPythonの準備完了通知
