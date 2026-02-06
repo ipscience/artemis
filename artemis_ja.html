@@ -1526,7 +1526,7 @@
                     <div class="tabs">
                         <button class="tab-btn active" onclick="showTab('mission', 'import')">インポート</button>
                         <button class="tab-btn" onclick="showTab('mission', 'columns')">カラム設定</button>
-                        <button class="tab-btn" onclick="showTab('mission', 'launch')">起動</button>
+                        <button class="tab-btn" onclick="showTab('mission', 'launch')">処理状況</button>
                     </div>
                     
                     <div id="mission-tab-import" class="tab-content active">
@@ -1569,8 +1569,7 @@
                     </div>
                     
                     <div id="mission-tab-launch" class="tab-content">
-                        <p style="margin-bottom: 0.8rem; font-size: 0.9rem;">分析エンジンを起動して前処理を実行します。</p>
-                        <button id="btn-launch" class="btn" style="width: 100%;">分析エンジンを起動</button>
+                        <p style="margin-bottom: 0.8rem; font-size: 0.9rem;">処理状況をここに表示します。ファイル読み込み時またはカラム設定変更時に自動で分析を開始します。</p>
                         <div class="progress-bar" style="display: none;" id="launch-progress">
                             <div class="progress-fill" id="launch-progress-fill" style="width: 0%;"></div>
                         </div>
@@ -2710,8 +2709,8 @@
         /** @type {boolean} Python環境が準備完了したか */
         window.__pyReady = false;
 
-        /** @type {boolean} Python起動前にLaunchボタンが押されたか (遅延実行用) */
-        window.__pendingLaunch = false;
+        /** @type {boolean} データが読み込まれたか */
+        window.__dataLoaded = false;
 
         /**
          * Python環境の準備状態を設定
@@ -2742,10 +2741,8 @@
             
             window.__pyReady = isReady;
             
-            if (isReady && window.__pendingLaunch) {
-                const launchBtn = document.getElementById('btn-launch');
-                if (launchBtn) launchBtn.click();
-                window.__pendingLaunch = false;
+            if (isReady && window.pyodide_globals && window.pyodide_globals.launch_engine) {
+                window.pyodide_globals.launch_engine(null);
             }
             
             if (isReady) {
@@ -3563,11 +3560,22 @@
         }
 
         /**
-         * クイックランチ (ホームページからの分析開始)
+         * カラム設定変更時に自動で再処理を実行（デバウンス付き）
          */
-        function quickLaunch() {
-            const btn = document.getElementById('btn-launch');
-            if (btn) btn.click();
+        window.__columnChangeTimer = null;
+        window.__dataLoaded = false;
+        function onColumnChange() {
+            if (!window.__pyReady) return;
+            if (!window.__dataLoaded) return;
+            clearTimeout(window.__columnChangeTimer);
+            window.__columnChangeTimer = setTimeout(() => {
+                const status = document.getElementById('launch-status');
+                if (status) status.innerHTML = '<div class="status-info">🔄 カラム設定が変更されました。再処理中...</div>';
+                showTab('mission', 'launch');
+                if (window.pyodide_globals && window.pyodide_globals.launch_engine) {
+                    window.pyodide_globals.launch_engine(null);
+                }
+            }, 600);
         }
 
         // ============================================================================
@@ -6017,16 +6025,11 @@
             if (overlay) overlay.style.display = 'none';
         }, 1200);
 
-        const launchBtn = document.getElementById('btn-launch');
-        if (launchBtn) {
-            launchBtn.addEventListener('click', () => {
-                if (!window.__pyReady) {
-                    window.__pendingLaunch = true;
-                    const status = document.getElementById('launch-status');
-                    if (status) status.innerHTML = '<div class="status-warn">Python起動中です。起動後に自動で分析エンジンを開始します。</div>';
-                }
-            });
-        }
+        // カラム設定の変更リスナーを登録
+        ['col-title','col-abstract','col-date','col-applicant','col-ipc','col-inventor','col-status'].forEach(id => {
+            const sel = document.getElementById(id);
+            if (sel) sel.addEventListener('change', onColumnChange);
+        });
 
         const atlasBtn = document.getElementById('btn-atlas');
         if (atlasBtn) {
@@ -7110,6 +7113,9 @@ async def on_file_change(event):
         
         document.getElementById('file-info').textContent = f'📂 {file.name} ({len(df):,}件)'
         
+        # JS側からlaunch_engineを呼べるようにする
+        window.pyodide_globals.launch_engine = create_proxy(launch_engine)
+        window.__dataLoaded = True
         # ファイル読み込み後、自動的に分析を開始
         launch_engine(None)
         
@@ -11031,7 +11037,6 @@ core_cancel_proxy = create_proxy(core_cancel_edit)
 g_proxies.extend([file_proxy, launch_proxy, atlas_proxy, core_search_proxy, core_ai_proxy, core_import_proxy, core_run_proxy, core_reanalyze_proxy, core_map_proxy, core_add_proxy, core_delete_proxy, core_update_proxy, core_edit_proxy, core_cancel_proxy])
 
 document.getElementById('file-input').addEventListener('change', file_proxy)
-document.getElementById('btn-launch').addEventListener('click', launch_proxy)
 document.getElementById('btn-atlas').addEventListener('click', atlas_proxy)
 document.getElementById('use-status-breakdown').addEventListener('change', atlas_proxy)
 document.getElementById('btn-core-search').addEventListener('click', core_search_proxy)

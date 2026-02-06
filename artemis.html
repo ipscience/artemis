@@ -1526,7 +1526,7 @@
                     <div class="tabs">
                         <button class="tab-btn active" onclick="showTab('mission', 'import')">Import</button>
                         <button class="tab-btn" onclick="showTab('mission', 'columns')">Column Settings</button>
-                        <button class="tab-btn" onclick="showTab('mission', 'launch')">Launch</button>
+                        <button class="tab-btn" onclick="showTab('mission', 'launch')">Status</button>
                     </div>
                     
                     <div id="mission-tab-import" class="tab-content active">
@@ -1569,8 +1569,7 @@
                     </div>
                     
                     <div id="mission-tab-launch" class="tab-content">
-                        <p style="margin-bottom: 0.8rem; font-size: 0.9rem;">Launch the analysis engine to run preprocessing.</p>
-                        <button id="btn-launch" class="btn" style="width: 100%;">Launch Analysis Engine</button>
+                        <p style="margin-bottom: 0.8rem; font-size: 0.9rem;">Processing status is displayed here. Analysis starts automatically when a file is loaded or column settings are changed.</p>
                         <div class="progress-bar" style="display: none;" id="launch-progress">
                             <div class="progress-fill" id="launch-progress-fill" style="width: 0%;"></div>
                         </div>
@@ -2743,8 +2742,9 @@
             window.__pyReady = isReady;
             
             if (isReady && window.__pendingLaunch) {
-                const launchBtn = document.getElementById('btn-launch');
-                if (launchBtn) launchBtn.click();
+                if (window.pyodide_globals && window.pyodide_globals.launch_engine) {
+                    window.pyodide_globals.launch_engine(null);
+                }
                 window.__pendingLaunch = false;
             }
             
@@ -3561,14 +3561,6 @@
                     btn.classList.add('active');
                 }
             });
-        }
-
-        /**
-         * クイックランチ (ホームページからの分析開始)
-         */
-        function quickLaunch() {
-            const btn = document.getElementById('btn-launch');
-            if (btn) btn.click();
         }
 
         // ============================================================================
@@ -6020,16 +6012,11 @@
             if (overlay) overlay.style.display = 'none';
         }, 1200);
 
-        const launchBtn = document.getElementById('btn-launch');
-        if (launchBtn) {
-            launchBtn.addEventListener('click', () => {
-                if (!window.__pyReady) {
-                    window.__pendingLaunch = true;
-                    const status = document.getElementById('launch-status');
-                    if (status) status.innerHTML = '<div class="status-warn">Python is starting. Analysis engine will launch automatically after startup.</div>';
-                }
-            });
-        }
+        // Column change auto-relaunch listeners
+        ['col-title', 'col-abstract', 'col-date', 'col-applicant', 'col-ipc', 'col-inventor', 'col-status'].forEach(id => {
+            const sel = document.getElementById(id);
+            if (sel) sel.addEventListener('change', onColumnChange);
+        });
 
         const atlasBtn = document.getElementById('btn-atlas');
         if (atlasBtn) {
@@ -7115,6 +7102,8 @@ async def on_file_change(event):
         document.getElementById('file-info').textContent = f'📂 {file.name} ({len(df):,} records)'
         
         # ファイル読み込み後、自動的に分析を開始
+        window.pyodide_globals.launch_engine = create_proxy(launch_engine)
+        window.__dataLoaded = True
         launch_engine(None)
         
     except Exception as e:
@@ -11038,7 +11027,6 @@ core_cancel_proxy = create_proxy(core_cancel_edit)
 g_proxies.extend([file_proxy, launch_proxy, atlas_proxy, core_search_proxy, core_ai_proxy, core_import_proxy, core_run_proxy, core_reanalyze_proxy, core_map_proxy, core_add_proxy, core_delete_proxy, core_update_proxy, core_edit_proxy, core_cancel_proxy])
 
 document.getElementById('file-input').addEventListener('change', file_proxy)
-document.getElementById('btn-launch').addEventListener('click', launch_proxy)
 document.getElementById('btn-atlas').addEventListener('click', atlas_proxy)
 document.getElementById('use-status-breakdown').addEventListener('change', atlas_proxy)
 document.getElementById('btn-core-search').addEventListener('click', core_search_proxy)
