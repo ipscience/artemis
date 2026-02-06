@@ -3563,6 +3563,25 @@
             });
         }
 
+        /**
+         * Auto re-process on column change (debounced)
+         */
+        window.__columnChangeTimer = null;
+        window.__dataLoaded = false;
+        function onColumnChange() {
+            if (!window.__pyReady) return;
+            if (!window.__dataLoaded) return;
+            clearTimeout(window.__columnChangeTimer);
+            window.__columnChangeTimer = setTimeout(() => {
+                const status = document.getElementById('launch-status');
+                if (status) status.innerHTML = '<div class="status-info">🔄 Column settings changed. Re-processing...</div>';
+                showTab('mission', 'launch');
+                if (window.pyodide_globals && window.pyodide_globals.launch_engine) {
+                    window.pyodide_globals.launch_engine(null);
+                }
+            }, 600);
+        }
+
         // ============================================================================
         // ダッシュボード関数
         // ============================================================================
