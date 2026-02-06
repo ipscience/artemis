@@ -3365,6 +3365,7 @@
                 const names = top.map(t => t[0]);
                 const displayNames = names.map(n => truncateApplicantName(n, 30));
                 const displayNamesReversed = [...displayNames].reverse();
+                const maxNameLen = Math.max(...displayNames.map(n => n.length), 10);
                 const leftMargin = Math.min(350, Math.max(150, maxNameLen * 9));
                 debugLog('[QuickAtlas] names count:', names.length, 'leftMargin:', leftMargin);
                 
@@ -4028,9 +4029,9 @@
                         fileInput.dispatchEvent(new Event('change', { bubbles: true }));
                     }
                     updateHomeFileStatus(files[0].name);
-                    showToast('success', `📄 Loaded ${files[0].name}`);
+                    showToast(`📄 Loaded ${files[0].name}`, 'success');
                 } else {
-                    showToast('error', 'Only CSV files are supported');
+                    showToast('Only CSV files are supported', 'error');
                 }
             });
             
@@ -4110,10 +4111,6 @@
                 const data = JSON.parse(dataJson);
                 const layout = JSON.parse(layoutJson);
                 
-                // デバッグ: saturn-chartの場合はlayoutを出力
-                if (divId === 'saturn-chart') {
-                    console.log('Saturn layout before:', JSON.stringify({paper_bgcolor: layout.paper_bgcolor, plot_bgcolor: layout.plot_bgcolor}));
-                }
                 
                 // #000が指定されている場合はテンプレートを無効化（テクノロジーマップ用）
                 const isBlackBg = layout.paper_bgcolor === '#000' || layout.plot_bgcolor === '#000';
@@ -4130,11 +4127,6 @@
                     if (!layout.plot_bgcolor || layout.plot_bgcolor === 'rgba(0,0,0,0.1)') {
                         layout.plot_bgcolor = 'rgba(0,0,0,0)';
                     }
-                }
-                
-                // デバッグ: saturn-chartの場合はlayoutを出力
-                if (divId === 'saturn-chart') {
-                    console.log('Saturn layout after:', JSON.stringify({paper_bgcolor: layout.paper_bgcolor, plot_bgcolor: layout.plot_bgcolor, isBlackBg: isBlackBg}));
                 }
                 
                 layout.font = { color: '#e0e1dd', family: 'Meiryo, Segoe UI, sans-serif' };
@@ -5895,6 +5887,7 @@
                 return;
             }
             
+            const svg = chartDiv.querySelector('svg');
             if (svg) {
                 try {
                     const serializer = new XMLSerializer();
@@ -7621,7 +7614,7 @@ def draw_atlas(event):
                         trace["stackgroup"] = "one"  # 積み上げ面用
                         traces.append(trace)
                     layout = ChartHelper.create_layout(
-                        title=f"件数推移積み上げ面{start}-{end})",
+                        title=f"件数推移積み上げ面（{start}-{end}）",
                         xaxis={"title": "出願年"},
                         yaxis={"title": "件数", "rangemode": "tozero"},
                         legend={"orientation": "h", "y": -0.25, "x": 0, "xanchor": "left"},
@@ -7636,10 +7629,11 @@ def draw_atlas(event):
                         color=COLOR_SEQUENCE[0]
                     )]
                     layout = ChartHelper.create_layout(
-                        title=f"件数推移折れ線！{start}-{end})",
+                        title=f"件数推移折れ線（{start}-{end}）",
                         xaxis={"title": "出願年"},
                         yaxis={"title": "件数", "rangemode": "tozero"}
                     )
+                ChartHelper.draw("atlas-chart", traces, layout)
             else:
                 sel = document.getElementById('atlas-line-applicants')
                 selected = [opt.value for opt in sel.selectedOptions]
@@ -8183,7 +8177,7 @@ class RegexNode(LogicNode):
     def __init__(self, pattern):
         self.source = pattern
         try:
-            self.pattern = re.compile(pattern, re.IGNORECAS | re.DOTALL)
+            self.pattern = re.compile(pattern, re.IGNORECASE | re.DOTALL)
         except Exception:
             self.pattern = None
     def evaluate(self, text):
@@ -8195,7 +8189,7 @@ class CoreLogicParser:
         self.pos = 0
 
     def tokenize(self, rule_str):
-        raw_tokens = re.findall(r'\(|\)|' r'\bnear\d+\b|' r'\badj\d+\b|' r'[\+\*]' r'|' r'[^\(\)\+\*\s]+', rule_str, re.IGNORECAS)
+        raw_tokens = re.findall(r'\(|\)|' r'\bnear\d+\b|' r'\badj\d+\b|' r'[\+\*]' r'|' r'[^\(\)\+\*\s]+', rule_str, re.IGNORECASE)
         self.tokens = [t.strip() for t in raw_tokens if t.strip()]
         self.pos = 0
 
@@ -8223,7 +8217,7 @@ class CoreLogicParser:
 
     def factor(self):
         left = self.atom()
-        while self.pos < len(self.tokens) and re.match(r'^(near|adj)\d+$', self.tokens[self.pos], re.IGNORECAS):
+        while self.pos < len(self.tokens) and re.match(r'^(near|adj)\d+$', self.tokens[self.pos], re.IGNORECASE):
             op = self.tokens[self.pos].lower()
             self.pos += 1
             right = self.atom()
@@ -8747,11 +8741,11 @@ def core_search(event):
                 else:
                     break
             
-            query = re.sub(r'\bNOT\s+(\S+)', lambda m: 'FALS' if m.group(1).lower() in text else 'TRU', query, flags=re.IGNORECAS)
+            query = re.sub(r'\bNOT\s+(\S+)', lambda m: 'FALS' if m.group(1).lower() in text else 'TRU', query, flags=re.IGNORECASE)
             
-            parts = re.split(r'\s+AND\s+', query, flags=re.IGNORECAS)
+            parts = re.split(r'\s+AND\s+', query, flags=re.IGNORECASE)
             for part in parts:
-                or_parts = re.split(r'\s+OR\s+', part, flags=re.IGNORECAS)
+                or_parts = re.split(r'\s+OR\s+', part, flags=re.IGNORECASE)
                 or_result = False
                 for op in or_parts:
                     op = op.strip()
@@ -8869,7 +8863,7 @@ def run_saturn_tfidf(event):
         else:
             reducer = PCA(n_components=min(30, X.shape[1]))
             X_reduced = reducer.fit_transform(X)
-            tsne = TSN(n_components=2, perplexity=min(30, len(X_reduced)-1), random_state=42, n_iter=300)
+            tsne = TSNE(n_components=2, perplexity=min(30, len(X_reduced)-1), random_state=42, n_iter=300)
             coords = tsne.fit_transform(X_reduced)
         
         kmeans = KMeans(n_clusters=n_clusters, random_state=42, n_init=10)
@@ -10141,7 +10135,8 @@ def show_bubble_race(event=None):
         UIHelper.warn_html('race-chart', '年次データが不足しています')
         return
     
-    # 注意: 年の出願人数を確認    for y in sorted(year_data.keys())[:3]:
+    # 注意: 年の出願人数を確認
+    for y in sorted(year_data.keys())[:3]:
         apps_in_year = year_data[y]
         debugLog(f"[BubbleRace] Year {y}: {len(apps_in_year)} applicants")
         top3 = sorted(apps_in_year.items(), key=lambda x: x[1], reverse=True)[:3]
@@ -10447,10 +10442,14 @@ def show_strategy_matrix(event):
     colors = []
     for r in results:
         if r['cagr'] > 0 and r['share'] > np.median([x['share'] for x in results]):
-            colors.append('#81c784')  # 高長・高シェア星        elif r['cagr'] > 0:
-            colors.append('#4fc3f7')  # 高長・低シェア問題        elif r['share'] > np.median([x['share'] for x in results]):
-            colors.append('#ffb74d')  # 低長・高シェアのなる木        else:
-            colors.append('#e57373')  # 低長・低シェア負け犬    
+            colors.append('#81c784')  # 高成長・高シェア（スター）
+        elif r['cagr'] > 0:
+            colors.append('#4fc3f7')  # 高成長・低シェア（問題児）
+        elif r['share'] > np.median([x['share'] for x in results]):
+            colors.append('#ffb74d')  # 低成長・高シェア（金のなる木）
+        else:
+            colors.append('#e57373')  # 低成長・低シェア（負け犬）
+    
     traces = [{
         "x": [r['share'] for r in results],
         "y": [r['cagr'] for r in results],
@@ -10497,7 +10496,7 @@ def show_strategy_matrix(event):
     summary_html = '<h4>ポジション分析</h4><table class="data-table"><tr><th>出願人</th><th>シェア</th><th>成長率</th><th>ポジション</th></tr>'
     for r in results:
         if r['cagr'] > 0 and r['share'] > med_share:
-            pos = '⭁Eスター'
+            pos = '⭐ スター'
         elif r['cagr'] > 0:
             pos = '❌ 問題'
         elif r['share'] > med_share:
@@ -10652,7 +10651,7 @@ def show_radar(event):
     if company2:
         dist2 = get_ipc_dist(company2)
         values2 = [float(dist2.get(c, 0)) for c in categories]
-        max2 = max(values2) if max(values2) > 0 else 1
+        max2 = max(values2) if values2 and max(values2) > 0 else 1
         values2_norm = [v / max2 * 100 for v in values2]
         
         traces.append({
