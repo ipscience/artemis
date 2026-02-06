@@ -4078,7 +4078,6 @@
                     }
                     updateHomeFileStatus(files[0].name);
                     showToast(`📄 Loaded ${files[0].name}`, 'success');
-                    setTimeout(() => { showPage('mission'); showTab('mission', 'launch'); }, 1000);
                 } else {
                     showToast('Only CSV files are supported', 'error');
                 }
@@ -4095,7 +4094,6 @@
                             fileInput.dispatchEvent(new Event('change', { bubbles: true }));
                         }
                         updateHomeFileStatus(file.name);
-                        setTimeout(() => { showPage('mission'); showTab('mission', 'launch'); }, 1000);
                     }
                 });
             }

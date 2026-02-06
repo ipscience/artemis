@@ -4077,7 +4077,6 @@
                     }
                     updateHomeFileStatus(files[0].name);
                     showToast(`📄 ${files[0].name} を読み込みました`, 'success');
-                    setTimeout(() => { showPage('mission'); showTab('mission', 'launch'); }, 1000);
                 } else {
                     showToast('CSVファイルのみ対応しています', 'error');
                 }
@@ -4094,7 +4093,6 @@
                             fileInput.dispatchEvent(new Event('change', { bubbles: true }));
                         }
                         updateHomeFileStatus(file.name);
-                        setTimeout(() => { showPage('mission'); showTab('mission', 'launch'); }, 1000);
                     }
                 });
             }
