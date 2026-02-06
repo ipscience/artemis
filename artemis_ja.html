@@ -11010,23 +11010,6 @@ def export_all_data(event):
     
     document.getElementById('export-result').innerHTML = '<div class="status-ok">📦 全データをクリップボードにコピーしました</div>'
 
-@ensure_data('data-preview')
-def show_data_preview(event=None):
-    global g_df_processed, g_col_map
-    
-    df = g_df_processed
-    title_col = g_col_map.get('title', df.columns[0])
-    if title_col == '(未選択)': title_col = df.columns[0]
-    
-    result_html = '<table class="data-table"><tr><th>#</th><th>年</th><th>タイトル</th><th>出願人</th></tr>'
-    for i, (_, row) in enumerate(df.head(20).iterrows(), 1):
-        apps = row.get('applicant_list', [])
-        app_str = escape_html(str(apps[0])[:20]) if apps else '-'
-        title = escape_html(str(row.get(title_col, ''))[:40])
-        result_html += f'<tr><td>{i}</td><td>{row.get("year", "-")}</td><td>{title}</td><td>{app_str}</td></tr>'
-    result_html += '</table>'
-    document.getElementById('data-preview').innerHTML = result_html
-
 # =====================================================
 # イベント登録
 # =====================================================
