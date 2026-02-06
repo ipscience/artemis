@@ -6869,6 +6869,10 @@ class ChartHelper:
         if hide_loading:
             window.showChartLoading(container_id, False, '')
         drawChart(container_id, json.dumps(traces), json.dumps(layout), editable_annotations)
+        # 描画後、チャートをビューにスクロール
+        el = document.getElementById(container_id)
+        if el:
+            el.scrollIntoView({"behavior": "smooth", "block": "nearest"})
 
 # ============================================================
 # UI ヘルパー関数
@@ -7066,6 +7070,12 @@ async def on_file_change(event):
     if files.length == 0:
         return
     
+    # 既存データがある場合は確認
+    if window.__dataLoaded:
+        if not window.confirm('現在の分析結果は失われます。\n新しいファイルを読み込みますか？'):
+            event.target.value = ''
+            return
+    
     file = files.item(0)
     
     # Read file as ArrayBuffer to detect encoding
@@ -7095,7 +7105,7 @@ async def on_file_change(event):
         try:
             content = raw_bytes.decode('utf-16-le')
             detected_encoding = 'utf-16-le'
-        except:
+        except (UnicodeDecodeError, LookupError):
             pass
     
     # If not detected, try encodings in order
@@ -10950,6 +10960,7 @@ IPC数: {df.explode('ipc_list')['ipc_list'].nunique():,}
     navigator.clipboard.writeText(summary)
     
     document.getElementById('export-result').innerHTML = '<div class="status-ok">📋 クリップボードにコピーしました</div>'
+    window.showToast('📋 サマリーをコピーしました', 'success')
 
 @ensure_tfidf('export-result')
 def export_keywords(event):
@@ -10965,6 +10976,7 @@ def export_keywords(event):
     navigator.clipboard.writeText(keyword_list)
     
     document.getElementById('export-result').innerHTML = '<div class="status-ok">📋 キーワードリストをコピーしました</div>'
+    window.showToast('📋 TOP50キーワードをコピーしました', 'success')
 
 # =====================================================
 # VOYAGER - 自動レポート生成
@@ -11070,6 +11082,7 @@ def export_all_data(event):
     navigator.clipboard.writeText(csv_data)
     
     document.getElementById('export-result').innerHTML = '<div class="status-ok">📦 全データをクリップボードにコピーしました</div>'
+    window.showToast('📦 全データをコピーしました', 'success')
 
 # =====================================================
 # イベント登録
