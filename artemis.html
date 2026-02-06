@@ -4175,6 +4175,9 @@
                     layout.template = {};
                     layout.paper_bgcolor = '#112240';
                     layout.plot_bgcolor = '#112240';
+                    // Set container div background to same color (covers gaps around Plotly SVG)
+                    const el = document.getElementById(divId);
+                    if (el) el.style.backgroundColor = '#112240';
                 } else {
                     layout.template = 'plotly_dark';
                     if (!layout.paper_bgcolor || layout.paper_bgcolor === 'rgba(0,0,0,0)') {
@@ -4183,6 +4186,9 @@
                     if (!layout.plot_bgcolor || layout.plot_bgcolor === 'rgba(0,0,0,0.1)') {
                         layout.plot_bgcolor = 'rgba(0,0,0,0)';
                     }
+                    // Reset container background
+                    const el = document.getElementById(divId);
+                    if (el) el.style.backgroundColor = '';
                 }
                 
                 layout.font = { color: '#e0e1dd', family: 'Meiryo, Segoe UI, sans-serif' };
