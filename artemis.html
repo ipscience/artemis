@@ -6892,25 +6892,6 @@ class UIHelper:
 # データ処理のヘルパー関数
 # ============================================================
 
-def get_filtered_df(year_filter: bool = True) -> pd.DataFrame | None:
-    """
-    フィルタリング済みDataFrameを取得する共通関数
-    
-    Args:
-        year_filter: 年フィルタを適用するかどうか
-        
-    Returns:
-        フィルタリング済みDataFrame、またはデータがない場合None
-    """
-    if not AppState.has_data():
-        return None
-    df = AppState.df_processed
-    if year_filter:
-        start = int(document.getElementById('year-start').value)
-        end = int(document.getElementById('year-end').value)
-        df = df[(df['year'] >= start) & (df['year'] <= end)]
-    return df
-
 def require_data(chart_id: str = None, message: str = 'データがありません') -> bool:
     """
     データの存在を確認し、なければ警告を表示
@@ -7010,36 +6991,6 @@ g_proxies = []
 g_core_rules = {}
 g_core_df_classified = None
 g_core_reanalyze_prompt = ""
-
-def sync_globals_to_appstate():
-    """グローバル変数をAppStateに同期移行用ヘルパー"""
-    AppState.df = g_df
-    AppState.df_processed = g_df_processed
-    AppState.col_map = g_col_map
-    AppState.tfidf_matrix = g_tfidf_matrix
-    AppState.vectorizer = g_vectorizer
-    AppState.feature_names = g_feature_names
-    AppState.status_colors = g_status_colors
-    AppState.status_order = g_status_order
-    AppState.core_rules = g_core_rules
-    AppState.core_df_classified = g_core_df_classified
-
-def sync_appstate_to_globals():
-    """AppStateをグローバル変数に同期移行用ヘルパー"""
-    global g_df, g_df_processed, g_col_map, g_tfidf_matrix, g_vectorizer
-    global g_feature_names, g_status_colors, g_status_order
-    global g_core_rules, g_core_df_classified
-    
-    g_df = AppState.df
-    g_df_processed = AppState.df_processed
-    g_col_map = AppState.col_map
-    g_tfidf_matrix = AppState.tfidf_matrix
-    g_vectorizer = AppState.vectorizer
-    g_feature_names = AppState.feature_names
-    g_status_colors = AppState.status_colors
-    g_status_order = AppState.status_order
-    g_core_rules = AppState.core_rules
-    g_core_df_classified = AppState.core_df_classified
 
 # ============================================================
 # ファイル読み込み
