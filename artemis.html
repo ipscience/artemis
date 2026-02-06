@@ -4178,6 +4178,24 @@
                     // Set container div background to same color (covers gaps around Plotly SVG)
                     const el = document.getElementById(divId);
                     if (el) el.style.backgroundColor = '#112240';
+                    // Explicitly configure axes for grid inside plot area
+                    const landscapeAxisDefaults = {
+                        gridcolor: 'rgba(255,255,255,0.08)',
+                        gridwidth: 1,
+                        showgrid: true,
+                        zeroline: false,
+                        showline: true,
+                        linecolor: 'rgba(255,255,255,0.15)',
+                        linewidth: 1,
+                        mirror: true,
+                        ticks: 'outside',
+                        tickcolor: 'rgba(255,255,255,0.15)',
+                        tickfont: { color: '#e0e1dd' },
+                        titlefont: { color: '#e0e1dd' },
+                        color: '#e0e1dd'
+                    };
+                    layout.xaxis = Object.assign({}, landscapeAxisDefaults, layout.xaxis || {});
+                    layout.yaxis = Object.assign({}, landscapeAxisDefaults, layout.yaxis || {});
                 } else {
                     layout.template = 'plotly_dark';
                     if (!layout.paper_bgcolor || layout.paper_bgcolor === 'rgba(0,0,0,0)') {
