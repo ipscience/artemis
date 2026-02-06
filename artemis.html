@@ -3574,6 +3574,20 @@
                     btn.classList.add('active');
                 }
             });
+
+            // Redraw previews when returning to home page if not yet drawn
+            if (page === 'home' && window.__previewDataCache) {
+                const kw = document.getElementById('preview-keywords');
+                if (kw && kw.children.length === 0) {
+                    setTimeout(() => {
+                        const d = window.__previewDataCache;
+                        drawPreviewTrendD3(d.yearCounts);
+                        drawPreviewApplicantsD3(d.topApplicants);
+                        drawPreviewIPCD3(d.topIPC);
+                        drawPreviewKeywords(d.topKeywords);
+                    }, 50);
+                }
+            }
         }
 
         /**
@@ -3639,6 +3653,9 @@
         }
         
         
+        // Preview data cache (for redraw when page becomes visible)
+        window.__previewDataCache = null;
+
         function updateDashboardPreview(dataJson) {
             const emptyState = document.getElementById('home-preview-container');
             const grid = document.getElementById('home-preview-grid');
@@ -3653,6 +3670,9 @@
                 return;
             }
             
+            // Cache for deferred redraw when page is hidden
+            window.__previewDataCache = data;
+
             if (emptyState) emptyState.style.display = 'none';
             if (grid) {
                 grid.classList.remove('hidden');
@@ -3973,6 +3993,11 @@
         function drawPreviewKeywords(topKeywords) {
             const container = document.getElementById('preview-keywords');
             if (!container || !topKeywords || !d3 || !d3.layout?.cloud) return;
+            if (Object.keys(topKeywords).length === 0) return;
+            
+            // Skip if container is hidden (clientWidth=0)
+            // Will be redrawn from cache when showPage('home') is called
+            if (container.clientWidth === 0) return;
             
             container.innerHTML = '';
             

@@ -3573,6 +3573,20 @@
                     btn.classList.add('active');
                 }
             });
+
+            // ホームページに戻った時、プレビューが未描画なら再描画
+            if (page === 'home' && window.__previewDataCache) {
+                const kw = document.getElementById('preview-keywords');
+                if (kw && kw.children.length === 0) {
+                    setTimeout(() => {
+                        const d = window.__previewDataCache;
+                        drawPreviewTrendD3(d.yearCounts);
+                        drawPreviewApplicantsD3(d.topApplicants);
+                        drawPreviewIPCD3(d.topIPC);
+                        drawPreviewKeywords(d.topKeywords);
+                    }, 50);
+                }
+            }
         }
 
         /**
@@ -3638,6 +3652,9 @@
         }
         
         
+        // プレビューデータのキャッシュ（ページ非表示時の再描画用）
+        window.__previewDataCache = null;
+
         function updateDashboardPreview(dataJson) {
             const emptyState = document.getElementById('home-preview-container');
             const grid = document.getElementById('home-preview-grid');
@@ -3652,6 +3669,9 @@
                 return;
             }
             
+            // キャッシュ保存（ページ非表示時の再描画用）
+            window.__previewDataCache = data;
+
             if (emptyState) emptyState.style.display = 'none';
             if (grid) {
                 grid.classList.remove('hidden');
@@ -3972,6 +3992,11 @@
         function drawPreviewKeywords(topKeywords) {
             const container = document.getElementById('preview-keywords');
             if (!container || !topKeywords || !d3 || !d3.layout?.cloud) return;
+            if (Object.keys(topKeywords).length === 0) return;
+            
+            // コンテナが非表示（clientWidth=0）の場合はスキップ
+            // showPage('home') 時にキャッシュから再描画される
+            if (container.clientWidth === 0) return;
             
             container.innerHTML = '';
             
