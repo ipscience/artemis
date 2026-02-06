@@ -4166,13 +4166,13 @@
                 const data = JSON.parse(dataJson);
                 const layout = JSON.parse(layoutJson);
                 
-                // #000が指定されている場合はテンプレートを無効化（テクノロジーマップ用）
-                const isBlackBg = layout.paper_bgcolor === '#000' || layout.plot_bgcolor === '#000';
-                if (isBlackBg) {
-                    // デフォルトテンプレートを無効化し、純粋な黒背景を使用
+                // ランドスケープ用背景色が指定されている場合はテンプレートを無効化
+                const isLandscapeBg = layout.paper_bgcolor === '#0d1b2a' || layout.plot_bgcolor === '#0d1b2a';
+                if (isLandscapeBg) {
+                    // デフォルトテンプレートを無効化し、ダークブルー背景を使用
                     layout.template = {};
-                    layout.paper_bgcolor = '#000';
-                    layout.plot_bgcolor = '#000';
+                    layout.paper_bgcolor = '#0d1b2a';
+                    layout.plot_bgcolor = '#0d1b2a';
                 } else {
                     layout.template = 'plotly_dark';
                     if (!layout.paper_bgcolor || layout.paper_bgcolor === 'rgba(0,0,0,0)') {
@@ -9070,8 +9070,8 @@ def run_saturn_tfidf(event):
             showlegend=True,
             legend={"orientation": "h", "y": -0.1},
             annotations=cluster_annotations if show_labels else [],
-            paper_bgcolor="#000",
-            plot_bgcolor="#000"
+            paper_bgcolor="#0d1b2a",
+            plot_bgcolor="#0d1b2a"
         )
         ChartHelper.draw("saturn-chart", traces, layout, editable_annotations=show_labels)
         
@@ -9385,8 +9385,8 @@ def run_saturn_sbert():
                     showlegend=True,
                     legend={"orientation": "h", "y": -0.1},
                     annotations=cluster_annotations if show_labels else [],
-                    paper_bgcolor="#000",
-                    plot_bgcolor="#000"
+                    paper_bgcolor="#0d1b2a",
+                    plot_bgcolor="#0d1b2a"
                 )
                 ChartHelper.draw("saturn-chart", traces, layout, editable_annotations=show_labels)
                 
