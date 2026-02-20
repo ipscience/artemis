@@ -19,16 +19,29 @@
     <meta name="author" content="Hajime Kumami">
     <title>ARTEMIS - 特許分析ツール</title>
 
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://pyscript.net https://cdn.plot.ly https://d3js.org https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://pyscript.net; connect-src 'self' https://cdn.jsdelivr.net https://pypi.org https://files.pythonhosted.org; img-src 'self' data: blob:; worker-src 'self' blob:;">
     <link rel="stylesheet" href="https://pyscript.net/releases/2024.1.1/core.css">
     <script type="module" src="https://pyscript.net/releases/2024.1.1/core.js"></script>
 
-    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js" integrity="sha384-Hl48Kq2HifOWdXEjMsKo6qxqvRLTYqIGbvlENBmkHAxZKIGCXv43H6W1jA671RzC" crossorigin="anonymous"></script>
 
-    <script src="https://d3js.org/d3.v7.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/d3-cloud@1.2.7/build/d3.layout.cloud.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/d3-sankey@0.12.3/dist/d3-sankey.min.js"></script>
+    <script src="https://d3js.org/d3.v7.min.js" integrity="sha384-CjloA8y00+1SDAUkjs099PVfnY2KmDC2BZnws9khD/lX1s46w6EPhpXdqMfjK6i" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3-cloud@1.2.7/build/d3.layout.cloud.min.js" integrity="sha384-qD3Ds+KOKpMK6lG6lBsmsN4ChUIQobla99Q0HKXl7Y5I47M2eve8PQXpLjTgOiwY" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3-sankey@0.12.3/dist/d3-sankey.min.js" integrity="sha384-SM54CE5h+qdDI046d2Y5ym7wq1kq4uxcQ1cqGq5/+5jrE5tPLeDJSq711Q8sIska" crossorigin="anonymous"></script>
 
-    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js" integrity="sha384-D/t0ZMqQW31H3az8ktEiNb39wyKnS82iFY52QPACM+IjKW3jDUhyIgh2PApRqJZs" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" integrity="sha384-vtjasyidUo0kW94K5MXDXntzOJpQgBKXmE7e2Ga4LG0skTTLeBi97eFAXsqewJjw" crossorigin="anonymous"></script>
+
+    <script>
+        // Service Workerを登録してCDNリソースをオフラインキャッシュ
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(reg => console.log('[SW] 登録完了, scope:', reg.scope))
+                    .catch(err => console.warn('[SW] 登録失敗:', err));
+            });
+        }
+    </script>
 
     <style>
 
@@ -1256,6 +1269,62 @@
             }
         }
 
+        /* ─── モバイル: ハンバーガーメニューによるオーバーレイサイドバー ─── */
+        .hamburger-btn {
+            display: none;
+            background: none;
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-sm);
+            color: var(--text-primary);
+            cursor: pointer;
+            padding: 6px 9px;
+            font-size: 1.2rem;
+            line-height: 1;
+            transition: background var(--transition-fast);
+            flex-shrink: 0;
+        }
+        .hamburger-btn:hover {
+            background: rgba(255,255,255,0.08);
+        }
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 199;
+            backdrop-filter: blur(2px);
+        }
+        @media (max-width: 600px) {
+            .hamburger-btn { display: flex; align-items: center; }
+            .container { position: relative; }
+            .sidebar {
+                position: fixed;
+                top: var(--header-height);
+                left: -210px;
+                height: calc(100vh - var(--header-height));
+                width: 200px !important;
+                z-index: 200;
+                transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                box-shadow: none;
+                overflow-y: auto;
+            }
+            .sidebar.sidebar-open {
+                left: 0;
+                box-shadow: 6px 0 24px rgba(0,0,0,0.6);
+            }
+            .sidebar-overlay.visible {
+                display: block;
+            }
+            .nav-btn {
+                justify-content: flex-start;
+                padding: 0 var(--spacing-md);
+                width: 100%;
+            }
+            .nav-btn .nav-label { display: block !important; }
+            .sidebar .module-status { display: block; }
+            .sidebar h3 { display: block; }
+        }
+
         
         .wc-tooltip,
         .network-tooltip,
@@ -1389,14 +1458,27 @@
     </div>
 
     <div class="header">
+        <button class="hamburger-btn" onclick="toggleSidebar()" title="メニュー" aria-label="ナビゲーションを開く/閉じる">☰</button>
         <h1>ARTEMIS</h1>
         <span id="py-status" style="margin-left: 0.6rem; font-size: 0.75rem; opacity: 0.6; font-weight: 400;">Engine loading…</span>
         <span id="transformers-status" class="transformers-status waiting" style="margin-left: 0.6rem; font-size: 0.7rem;">SBERT: 待機中</span>
         <span id="file-info" style="margin-left: auto; font-size: 0.8rem; opacity: 0.8; font-weight: 500; background: rgba(79, 195, 247, 0.1); padding: 0.3rem 0.8rem; border-radius: 20px;">データ未読込</span>
+        <a href="./artemis.html" title="Switch to English" style="
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.75rem;
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-sm);
+            padding: 0.2rem 0.5rem;
+            transition: all var(--transition-fast);
+            white-space: nowrap;
+            margin-left: 0.6rem;
+        " onmouseover="this.style.borderColor='var(--color-primary)';this.style.color='var(--color-primary)';"
+           onmouseout="this.style.borderColor='var(--border-light)';this.style.color='var(--text-secondary)';">EN</a>
     </div>
     
     <div class="container">
-        <div class="sidebar">
+        <div class="sidebar" id="main-sidebar">
             <button class="nav-btn active" onclick="showPage('home')" title="ダッシュボード"><span class="nav-label">ダッシュボード</span></button>
             <button class="nav-btn" onclick="showPage('mission')" title="前処理"><span class="nav-label">前処理</span></button>
             <div class="nav-divider"></div>
@@ -1407,6 +1489,7 @@
             <button class="nav-btn" onclick="showPage('explorer')" title="キーワード"><span class="nav-label">キーワード</span></button>
             <button class="nav-btn" onclick="showPage('crew')" title="ネットワーク"><span class="nav-label">ネットワーク</span></button>
             <button class="nav-btn" onclick="showPage('advanced')" title="アドバンスト"><span class="nav-label">アドバンスト</span></button>
+            <button class="nav-btn" onclick="showPage('geo')" title="地理分析"><span class="nav-label">地理分析</span></button>
             <div class="nav-divider"></div>
             <button class="nav-btn" onclick="showPage('export')" title="エクスポート"><span class="nav-label">エクスポート</span></button>
             <div class="module-status">
@@ -1437,8 +1520,8 @@
                     </div>
                 </div>
             </div>
-        </div>
-        
+        </div><!-- end .sidebar -->
+        <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
         <div class="main">
             
             <div id="page-home" class="page">
@@ -2130,6 +2213,7 @@
                     <div style="margin-bottom: 0.5rem; font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">高度な可視化</div>
                     <div class="tabs">
                         <button class="tab-btn" onclick="showTab('mega', 'treemap')">ツリーマップ</button>
+                        <button class="tab-btn" onclick="showTab('mega', 'strategy')">戦略マトリクス</button>
                         <button class="tab-btn" onclick="showTab('mega', 'sankey')">サンキー図</button>
                         <button class="tab-btn" onclick="showTab('mega', 'radar')">レーダー</button>
                         <button class="tab-btn" onclick="showTab('mega', 'sunburst')">サンバースト</button>
@@ -2442,6 +2526,58 @@
                 </div>
             </div>
             
+
+            <!-- ===== 地理分析ページ ===== -->
+            <div id="page-geo" class="page hidden">
+                <div class="card">
+                    <h2>地理分析</h2>
+                    <p style="margin-bottom: 0.8rem; font-size: 0.85rem; color: var(--text-secondary);"
+                    >国/地域別の出願分布を可視化します。出願人情報や特許番号の国コードから自動検出します。</p>
+                    <div class="grid-3" style="margin-bottom: 0.8rem;">
+                        <div class="form-group">
+                            <label>国コード抽出元</label>
+                            <select id="geo-source">
+                                <option value="auto" selected>自動検出</option>
+                                <option value="applicant">出願人から</option>
+                                <option value="patent_id">特許番号の先頭2文字</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>地図タイプ</label>
+                            <select id="geo-maptype">
+                                <option value="choropleth" selected>コロプレス（塑り塩マップ）</option>
+                                <option value="scatter">バブルマップ</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>カラースケール</label>
+                            <select id="geo-colorscale">
+                                <option value="Blues" selected>Blues</option>
+                                <option value="Viridis">Viridis</option>
+                                <option value="Plasma">Plasma</option>
+                                <option value="YlOrRd">黄色-橙色-赤</option>
+                                <option value="Teal">Teal</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="grid-2" style="margin-bottom: 0.8rem;">
+                        <div class="form-group">
+                            <label>開始年</label>
+                            <input type="number" id="geo-year-start" value="2000">
+                        </div>
+                        <div class="form-group">
+                            <label>終了年</label>
+                            <input type="number" id="geo-year-end" value="2025">
+                        </div>
+                    </div>
+                    <button id="btn-geo" class="btn" style="margin-bottom: 0.8rem;">地理分布地図を描画</button>
+                    <div id="geo-status" style="margin-bottom: 0.5rem;"></div>
+                    <div id="geo-chart" class="chart-container" style="min-height: 480px;"></div>
+                    <button class="btn btn-secondary" onclick="saveSnapshot('geo-chart', '地理分布地図')" style="margin-top: 0.5rem;">スナップショットを保存</button>
+                    <div id="geo-table" style="margin-top: 1rem; max-height: 300px; overflow-y: auto;"></div>
+                </div>
+            </div>
+
             
             <div id="page-export" class="page hidden">
                 <div class="card">
@@ -2454,6 +2590,9 @@
                     <div class="grid-2" style="margin-top: 0.5rem;">
                         <button id="btn-generate-report" class="btn">レポートを生成</button>
                         <button id="btn-export-all" class="btn">全データをエクスポート</button>
+                    </div>
+                    <div class="grid-2" style="margin-top: 0.5rem;">
+                        <button id="btn-export-excel" class="btn btn-secondary">&#128202; Excelにエクスポート (.xlsx)</button>
                     </div>
                     <div id="export-result" style="margin-top: 1rem;"></div>
                     
@@ -3227,6 +3366,9 @@
                             if (match) sel.value = match;
                         });
 
+                        // 前回の列設定をLocalStorageから復元（自動検出を上書き）
+                        loadColumnSettings(window.quickColumns);
+
                         const preview = document.getElementById('preview-area');
                         if (preview) {
                             const head = window.quickColumns.slice(0, 6);
@@ -3479,11 +3621,13 @@
                 info: 'ℹ️'
             };
 
+            const escHtml = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
             const toast = document.createElement('div');
             toast.className = `toast toast-${type}`;
             toast.innerHTML = `
                 <span class="toast-icon">${icons[type] || icons.info}</span>
-                <span class="toast-message">${message}</span>
+                <span class="toast-message">${escHtml(message)}</span>
                 <button class="toast-close" onclick="this.parentElement.remove()">×</button>
             `;
 
@@ -3536,10 +3680,28 @@
         // ============================================================================
 
         /**
+         * モバイルハンバーガーメニューによるサイドバー開閉
+         */
+        function toggleSidebar() {
+            const sidebar = document.getElementById('main-sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            if (!sidebar) return;
+            const isOpen = sidebar.classList.toggle('sidebar-open');
+            if (overlay) overlay.classList.toggle('visible', isOpen);
+        }
+
+        /**
          * 指定されたページを表示
          * @param {string} page - 表示するページのID (例: 'home', 'atlas', 'core')
          */
         function showPage(page) {
+            // モバイルサイドバーを閉じる
+            const sidebar = document.getElementById('main-sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            if (sidebar && sidebar.classList.contains('sidebar-open')) {
+                sidebar.classList.remove('sidebar-open');
+                if (overlay) { overlay.classList.remove('visible'); }
+            }
             // データ未読み込み時のガード（ホーム・ミッション以外）
             const safePages = ['home', 'mission'];
             if (!safePages.includes(page) && !window.__dataLoaded) {
@@ -3595,6 +3757,7 @@
         window.__columnChangeTimer = null;
         window.__dataLoaded = false;
         function onColumnChange() {
+            saveColumnSettings();
             if (!window.__pyReady) return;
             if (!window.__dataLoaded) return;
             clearTimeout(window.__columnChangeTimer);
@@ -3605,6 +3768,43 @@
                 const triggerBtn = document.getElementById('trigger-relaunch');
                 if (triggerBtn) triggerBtn.click();
             }, 600);
+        }
+
+        // ─── 列設定のLocalStorage保存機能 ────────────────────────────
+        const ARTEMIS_COL_KEY = 'artemis_col_settings';
+        const ARTEMIS_COL_IDS = ['col-title','col-abstract','col-date','col-applicant','col-ipc','col-inventor','col-status'];
+
+        function saveColumnSettings() {
+            try {
+                const settings = {};
+                ARTEMIS_COL_IDS.forEach(id => {
+                    const sel = document.getElementById(id);
+                    if (sel && sel.value) settings[id] = sel.value;
+                });
+                localStorage.setItem(ARTEMIS_COL_KEY, JSON.stringify(settings));
+            } catch(e) { /* 容量不足またはプライベートブラウジング時 */ }
+        }
+
+        function loadColumnSettings(availableColumns) {
+            try {
+                const raw = localStorage.getItem(ARTEMIS_COL_KEY);
+                if (!raw) return;
+                const settings = JSON.parse(raw);
+                if (!settings) return;
+                const available = new Set(availableColumns || []);
+                let restored = 0;
+                ARTEMIS_COL_IDS.forEach(id => {
+                    const val = settings[id];
+                    if (!val) return;
+                    if (!available.has(val)) return;
+                    const sel = document.getElementById(id);
+                    if (sel && sel.value !== val) {
+                        sel.value = val;
+                        restored++;
+                    }
+                });
+                if (restored > 0) showToast(`📂 前回の列設定を${restored}項目復元しました`, 'info');
+            } catch(e) { }
         }
 
         // ============================================================================
@@ -4103,10 +4303,11 @@
          * @param {string} filename - 読み込んだファイル名
          */
         function updateHomeFileStatus(filename) {
+            const escHtml = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
             const status = document.getElementById('home-file-status');
             const launchBtn = document.getElementById('home-launch-btn');
             if (status) {
-                status.innerHTML = `<span style="color: #81c784;">✅</span> ${filename} を読み込みました`;
+                status.innerHTML = `<span style="color: #81c784;">✅</span> ${escHtml(filename)} を読み込みました`;
             }
             if (launchBtn) {
                 launchBtn.disabled = false;
@@ -4476,7 +4677,7 @@
                                 .style('left', `${event.offsetX + 15}px`)
                                 .style('top', `${event.offsetY - 35}px`)
                                 .style('z-index', '1000')
-                                .html(`<strong style="font-size:16px;">${d.text}</strong><br><span style="color:#aaa;">TF-IDF:</span> ${d.score.toFixed(4)}`);
+                                .html(`<strong style="font-size:16px;">${d.text.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</strong><br><span style="color:#aaa;">TF-IDF:</span> ${d.score.toFixed(4)}`);
                         })
                         .on('mouseout', function(event, d) {
                             d3.select(this)
@@ -4611,7 +4812,7 @@
                         .style('left', `${event.offsetX + 15}px`)
                         .style('top', `${event.offsetY - 40}px`)
                         .style('z-index', '1000')
-                        .html(`<strong style="font-size:15px;color:#4fc3f7;">${d.label}</strong><br>
+                        .html(`<strong style="font-size:15px;color:#4fc3f7;">${d.label.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</strong><br>
                                <span style="color:#aaa;">次数:</span> ${d.degree}<br>
                                <span style="color:#aaa;">中心性:</span> ${d.centrality.toFixed(3)}`);
                 })
@@ -4900,7 +5101,7 @@
                             .style('font-size', '12px')
                             .style('pointer-events', 'none')
                             .style('z-index', '9999')
-                            .html(`<strong>${d.source.name}</strong> → <strong>${d.target.name}</strong><br/>件数: ${d.value}`)
+                            .html(`<strong>${d.source.name.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</strong> → <strong>${d.target.name.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</strong><br/>件数: ${d.value}`)
                             .style('left', (event.pageX + 15) + 'px')
                             .style('top', (event.pageY - 10) + 'px');
                     })
@@ -5245,7 +5446,7 @@
                             .style('font-size', '12px')
                             .style('pointer-events', 'none')
                             .style('z-index', '9999')
-                            .html(`<strong>${d.data.name}</strong><br/>件数: ${d.value}`)
+                            .html(`<strong>${d.data.name.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</strong><br/>件数: ${d.value}`)
                             .style('left', (event.pageX + 15) + 'px')
                             .style('top', (event.pageY - 10) + 'px');
                     })
@@ -5332,10 +5533,11 @@
             
             if (!panel || !content) return;
             
+            const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
             const nodeValue = node.value || 0;
             const nodeName = node.data ? node.data.name : 'Unknown';
             
-            title.innerHTML = `📋 ${nodeName} <span style="font-weight: normal; font-size: 0.85rem;">(${nodeValue}件)</span>`;
+            title.innerHTML = `📋 ${esc(nodeName)} <span style="font-weight: normal; font-size: 0.85rem;">(${nodeValue}件)</span>`;
             
             if (window.circlePackPatents && window.circlePackPatents[nodeName]) {
                 const patents = window.circlePackPatents[nodeName];
@@ -5344,10 +5546,10 @@
                 patents.slice(0, 50).forEach((p, i) => {
                     html += `
                         <div style="background: rgba(79, 195, 247, 0.1); border-left: 3px solid #4fc3f7; padding: 0.5rem; border-radius: 4px;">
-                            <div style="font-weight: bold; color: #4fc3f7; font-size: 0.8rem;">${p.app_number || ''}</div>
-                            <div style="color: #e0e1dd; margin-top: 0.2rem;">${(p.title || '').slice(0, 60)}${(p.title || '').length > 60 ? '...' : ''}</div>
+                            <div style="font-weight: bold; color: #4fc3f7; font-size: 0.8rem;">${esc(p.app_number || '')}</div>
+                            <div style="color: #e0e1dd; margin-top: 0.2rem;">${esc((p.title || '').slice(0, 60))}${(p.title || '').length > 60 ? '...' : ''}</div>
                             <div style="color: #888; font-size: 0.75rem; margin-top: 0.2rem;">
-                                ${p.year || ''} | ${(p.applicant || '').slice(0, 25)}${(p.applicant || '').length > 25 ? '...' : ''}
+                                ${esc(p.year || '')} | ${esc((p.applicant || '').slice(0, 25))}${(p.applicant || '').length > 25 ? '...' : ''}
                             </div>
                         </div>
                     `;
@@ -5364,7 +5566,7 @@
                     node.children.forEach(child => {
                         html += `
                             <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(79, 195, 247, 0.1); padding: 0.4rem 0.6rem; border-radius: 4px;">
-                                <span style="color: #e0e1dd;">${child.data.name}</span>
+                                <span style="color: #e0e1dd;">${esc(child.data.name)}</span>
                                 <span style="color: #4fc3f7; font-weight: bold;">${child.value}件</span>
                             </div>
                         `;
@@ -5470,7 +5672,7 @@
                             .style('font-size', '12px')
                             .style('pointer-events', 'none')
                             .style('z-index', '9999')
-                            .html(`<strong>${d.data.name}</strong><br/>件数: ${d.value}`)
+                            .html(`<strong>${d.data.name.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</strong><br/>件数: ${d.value}`)
                             .style('left', (event.pageX + 15) + 'px')
                             .style('top', (event.pageY - 10) + 'px');
                     })
@@ -5667,7 +5869,7 @@
                             .style('font-size', '12px')
                             .style('pointer-events', 'none')
                             .style('z-index', '9999')
-                            .html(`<strong>${names[d.source.index]}</strong> ↔ <strong>${names[d.target.index]}</strong><br/>共起: ${d.source.value}件`)
+                            .html(`<strong>${names[d.source.index].replace(/</g,'&lt;').replace(/>/g,'&gt;')}</strong> ↔ <strong>${names[d.target.index].replace(/</g,'&lt;').replace(/>/g,'&gt;')}</strong><br/>共起: ${d.source.value}件`)
                             .style('left', (event.pageX + 15) + 'px')
                             .style('top', (event.pageY - 10) + 'px');
                     })
@@ -5773,7 +5975,7 @@
                             .style('font-size', '12px')
                             .style('pointer-events', 'none')
                             .style('z-index', '9999')
-                            .html(`<strong>${d.key}</strong>`)
+                            .html(`<strong>${d.key.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</strong>`)
                             .style('left', (event.pageX + 15) + 'px')
                             .style('top', (event.pageY - 10) + 'px');
                     })
@@ -5927,6 +6129,40 @@
         }
 
         // ─────────────────────────────────────────────────────────────
+        // Excel エクスポート (xlsx.js)
+        // ─────────────────────────────────────────────────────────────
+        /**
+         * 処理済みデータを Excel (.xlsx)にエクスポートする (SheetJS 使用)
+         * Pythonから JSON 文字列を引数に呼び出す
+         */
+        function exportToExcel(jsonData, sheetName, filename) {
+            try {
+                if (typeof XLSX === 'undefined') {
+                    showToast('❌ xlsx.js が利用できません', 'error');
+                    return;
+                }
+                const rows = typeof jsonData === 'string' ? JSON.parse(jsonData) : jsonData;
+                const ws = XLSX.utils.json_to_sheet(rows);
+                const colWidths = {};
+                rows.forEach(row => {
+                    Object.entries(row).forEach(([k, v]) => {
+                        const len = Math.min(String(v ?? '').length, 50);
+                        colWidths[k] = Math.max(colWidths[k] || k.length, len);
+                    });
+                });
+                ws['!cols'] = Object.values(colWidths).map(w => ({ wch: w + 2 }));
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, sheetName || '特許データ');
+                XLSX.writeFile(wb, filename || 'artemis_export.xlsx');
+                showToast('📊 Excelファイルをダウンロードしました', 'success');
+            } catch(e) {
+                console.error('Excel export error:', e);
+                showToast('❌ Excelエクスポート失敗: ' + e.message, 'error');
+            }
+        }
+        window.exportToExcel = exportToExcel;
+
+        // ─────────────────────────────────────────────────────────────
         // スナップショット機能
         // ─────────────────────────────────────────────────────────────
 
@@ -6027,12 +6263,13 @@
             
             let html = '<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem;">';
             window.snapshotList.forEach((snap, idx) => {
+                const escH = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
                 html += `
                     <div class="snapshot-item" style="background: rgba(0,0,0,0.3); padding: 0.5rem; border-radius: 8px;">
                         <img src="${snap.dataUrl}" style="width: 100%; border-radius: 4px; cursor: pointer;" onclick="downloadSnapshot(${snap.id})">
                         <div style="margin-top: 0.3rem; font-size: 0.8rem;">
-                            <div style="font-weight: bold;">${snap.name}</div>
-                            <div style="color: #888;">${snap.timestamp}</div>
+                            <div style="font-weight: bold;">${escH(snap.name)}</div>
+                            <div style="color: #888;">${escH(snap.timestamp)}</div>
                             <button class="btn btn-small" onclick="downloadSnapshot(${snap.id})" style="margin-top: 0.3rem; font-size: 0.75rem; padding: 0.2rem 0.5rem;">ダウンロード</button>
                             <button class="btn btn-small btn-danger" onclick="deleteSnapshot(${snap.id})" style="margin-top: 0.3rem; font-size: 0.75rem; padding: 0.2rem 0.5rem;">削除</button>
                         </div>
@@ -6988,9 +7225,13 @@ def require_data(chart_id: str = None, message: str = 'データがありませ�
 
 def require_tfidf(chart_id: str = None) -> bool:
     """TF-IDF処理完了確認"""
-    if not AppState.has_data() or not AppState.has_tfidf():
+    if not AppState.has_data():
         if chart_id:
             UIHelper.show_warning(chart_id, 'TF-IDF未処理', '先にデータをインポートしてください')
+        return False
+    if not AppState.has_tfidf():
+        if chart_id:
+            UIHelper.show_warning(chart_id, 'TF-IDF未処理', '先に「分析エンジンを起動」してください')
         return False
     return True
 
@@ -7136,7 +7377,7 @@ async def on_file_change(event):
                 continue
     
     if content is None:
-        show_toast('error', 'ファイルのエンコーディングを検出できませんでした')
+        window.showToast('ファイルのエンコーディングを検出できませんでした', 'error')
         return
     
     try:
@@ -7175,13 +7416,13 @@ async def on_file_change(event):
         
         # Auto-map columns based on common naming patterns
         auto_map = {
-            'col-title': ['発明名称', 'Title', 'title', '名称'],
-            'col-abstract': ['要約', 'Abstract', 'abstract', '要約・抄録'],
-            'col-date': ['出願日', 'Date', 'applicationDate', '出願年'],
-            'col-applicant': ['出願人', 'Applicant', 'applicant', '出願人/権利者'],
-            'col-ipc': ['IPC', 'FI', 'ipc', 'Fターム'],
-            'col-inventor': ['発明者', 'Inventor', 'inventor'],
-            'col-status': ['IPC', 'FI', 'ステータス', 'Status', 'status', '法的状況', '審査状況']
+            'col-title': ['発明名称', 'Title', 'title', '名称', 'Invention Title', 'Patent Title', 'publication_title'],
+            'col-abstract': ['要約', 'Abstract', 'abstract', '要約・抄録', 'Description', 'Summary', 'description'],
+            'col-date': ['出願日', 'Date', 'applicationDate', '出願年', 'Filing Date', 'filing_date', 'Application Date', 'application_date', 'Priority Date', 'publication_date'],
+            'col-applicant': ['出願人', 'Applicant', 'applicant', '出願人/権利者', 'Assignee', 'assignee', 'Applicant(s)', 'Owner', 'Patent Owner', 'current_assignee'],
+            'col-ipc': ['IPC', 'FI', 'ipc', 'Fターム', 'CPC', 'cpc', 'Classification', 'main_ipc', 'ipc_class'],
+            'col-inventor': ['発明者', 'Inventor', 'inventor', 'Inventor(s)', 'inventors'],
+            'col-status': ['ステータス', 'Status', 'status', '法的状況', '審査状況', 'Legal Status', 'legal_status', 'Patent Status']
         }
         
         for sel_id, keywords in auto_map.items():
@@ -7375,8 +7616,13 @@ def launch_engine(event):
         # 年度コントロールを設定
         if df['year'].max() > 0:
             valid_years = df[df['year'] > 0]['year']
-            document.getElementById('year-start').value = str(int(valid_years.min()))
-            document.getElementById('year-end').value = str(int(valid_years.max()))
+            y_min = str(int(valid_years.min()))
+            y_max = str(int(valid_years.max()))
+            document.getElementById('year-start').value = y_min
+            document.getElementById('year-end').value = y_max
+            # 地理分析ページの年度コントロールも同期
+            document.getElementById('geo-year-start').value = y_min
+            document.getElementById('geo-year-end').value = y_max
         
         # 出願人選択リストを設定
         top_applicants = (
@@ -8191,7 +8437,7 @@ def draw_atlas(event):
 def _core_text_preprocessor(text):
     if not isinstance(text, str): return ""
     text = unicodedata.normalize('NFKC', text).lower()
-    text = re.sub(r'[][^]{1,80}[]', ' ', text)
+    text = re.sub(r'\[[^\]]{1,80}\]', ' ', text)
     text = re.sub(r'(?:図|Fig|FIG|fig)[. 　]*\d+', ' ', text)
     text = re.sub(r'[!"“ $%\'()！,\-:=>?@\[\]\\^_`{|}~〜〜！]', ' ', text)
     return text
@@ -8258,7 +8504,7 @@ class CoreLogicParser:
             right = self.atom()
             l_rex = self.to_regex_string(left)
             r_rex = self.to_regex_string(right)
-            n = int(re.findall(r'\d+', op)[0])
+            n = min(int(re.findall(r'\d+', op)[0]), 100)
             if op.startswith('near'):
                 pattern = r'(?:{}.{{0,{}}}?{}|{}.{{0,{}}}?{})'.format(l_rex, n, r_rex, r_rex, n, l_rex)
             else:
@@ -8321,11 +8567,11 @@ def update_core_axis_selects():
     y_sel = document.getElementById('core-y-axis')
     re_sel = document.getElementById('core-reanalyze-axis')
     if x_sel:
-        x_sel.innerHTML = ''.join([f'<option value="{a}">{a}</option>' for a in all_axes])
+        x_sel.innerHTML = ''.join([f'<option value="{escape_html(str(a))}">{escape_html(str(a))}</option>' for a in all_axes])
     if y_sel:
-        y_sel.innerHTML = ''.join([f'<option value="{a}">{a}</option>' for a in all_axes])
+        y_sel.innerHTML = ''.join([f'<option value="{escape_html(str(a))}">{escape_html(str(a))}</option>' for a in all_axes])
     if re_sel:
-        re_sel.innerHTML = ''.join([f'<option value="{a}">{a}</option>' for a in axes])
+        re_sel.innerHTML = ''.join([f'<option value="{escape_html(str(a))}">{escape_html(str(a))}</option>' for a in axes])
 
     axis_sel = document.getElementById('core-axis-select')
     if axis_sel:
@@ -8528,7 +8774,7 @@ def core_ai_generate(event):
 # 代表文書サンプル
 {sampled_docs_str}
 """
-        document.getElementById('core-ai-output').innerHTML = '<div class="status-ok">✅ プロンプトを生成しました</div><pre style="white-space: pre-wrap; font-size: 0.8rem;">' + prompt + '</pre>'
+        document.getElementById('core-ai-output').innerHTML = '<div class="status-ok">✅ プロンプトを生成しました</div><pre style="white-space: pre-wrap; font-size: 0.8rem;">' + escape_html(prompt) + '</pre>'
     except Exception as e:
         document.getElementById('core-ai-output').innerHTML = f'<div class="status-err">❌ {escape_html(str(e))}</div>'
 
@@ -8664,7 +8910,7 @@ def core_reanalyze(event):
 # 未分類特許のサンプル
 {''.join(samples)}
 """
-        document.getElementById('core-reanalyze-output').innerHTML = '<div class="status-ok">✅ 再分析プロンプトを生成しました</div><pre style="white-space: pre-wrap; font-size: 0.8rem;">' + g_core_reanalyze_prompt + '</pre>'
+        document.getElementById('core-reanalyze-output').innerHTML = '<div class="status-ok">✅ 再分析プロンプトを生成しました</div><pre style="white-space: pre-wrap; font-size: 0.8rem;">' + escape_html(g_core_reanalyze_prompt) + '</pre>'
     except Exception as e:
         document.getElementById('core-reanalyze-output').innerHTML = f'<div class="status-err">❌ {escape_html(str(e))}</div>'
 
@@ -8713,7 +8959,7 @@ def core_draw_map(event):
     if chart_type == 'heatmap':
         x_vals = sorted(pivot['X'].unique())
         y_vals = sorted(pivot['Y'].unique())
-        z = pd.pivot_table(pivot, index='Y', columns='X', values='count', fill_value=0).reindex(index=y_vals, columns=x_vals).values
+        z = pd.pivot_table(pivot, index='Y', columns='X', values='count', fill_value=0).reindex(index=y_vals, columns=x_vals).values.tolist()
         traces = [{"type": "heatmap", "x": x_vals, "y": y_vals, "z": z, "colorscale": "Blues"}]
         layout = ChartHelper.create_layout(title=f"特許マップ({x_ax} × {y_ax})", height=600)
     else:
@@ -8818,7 +9064,7 @@ def core_search(event):
         title_col = cm.get('title', df.columns[0])
         if title_col == '(未選択)': title_col = df.columns[0]
         
-        result_html = f'<div class="status-ok">🔍 {len(results)} 件ヒット（{int(mask.sum())}件中</div>'
+        result_html = f'<div class="status-ok">🔍 {len(results)} 件ヒット（{int(mask.sum())}件中）</div>'
         if len(results) > 0:
             result_html += '<table class="data-table"><tr><th>No.</th><th>タイトル</th><th>年</th><th>出願人</th></tr>'
             for i, (_, row) in enumerate(results.iterrows(), 1):
@@ -10285,11 +10531,13 @@ def show_circle_packing(event):
         for _, row in df.iterrows():
             if parent_col == 'year':
                 if str(row.get('year', '')) == parent:
+                    app_list = row.get('applicant_list', [])
+                    applicant_str = app_list[0] if isinstance(app_list, list) and app_list else ''
                     parent_patents.append({
                         "app_number": str(row.get(appno_col, ''))[:20] if appno_col else '',
                         "title": str(row.get(title_col, ''))[:80] if title_col else '',
                         "year": str(row.get('year', '')),
-                        "applicant": str(row.get(parent_col, [])[:1][0] if row.get(parent_col) else '')[:30]
+                        "applicant": str(applicant_str)[:30]
                     })
             else:
                 parents_in_row = row.get(parent_col, [])
@@ -10530,9 +10778,9 @@ def show_strategy_matrix(event):
         if r['cagr'] > 0 and r['share'] > med_share:
             pos = '⭐ スター'
         elif r['cagr'] > 0:
-            pos = '❌ 問題'
+            pos = '❓ 問題児'
         elif r['share'] > med_share:
-            pos = '💰 金なる木'
+            pos = '💰 金のなる木'
         else:
             pos = '🐕 負け犬'
         summary_html += f'<tr><td>{escape_html(truncate_applicant_name(r["name"], 25))}</td><td>{r["share"]:.1f}%</td><td>{r["cagr"]:+.1f}%</td><td>{pos}</td></tr>'
@@ -11101,8 +11349,289 @@ def export_all_data(event):
     document.getElementById('export-result').innerHTML = '<div class="status-ok">📦 全データをクリップボードにコピーしました</div>'
     window.showToast('📦 全データをコピーしました', 'success')
 
+@ensure_data('export-result', 'データがありません')
+def export_excel(event):
+    """処理済みデータを xlsx.js を使って Excel ファイルとして保存"""
+    global g_df_processed
+    import json, numbers
+    try:
+        df_export = g_df_processed.copy()
+        # 内部列（_プレフィックス）は除外
+        df_export = df_export[[c for c in df_export.columns if not str(c).startswith('_')]]
+        records = df_export.head(10000).to_dict(orient='records')
+        # 数値型は保持、JSONシリアライズ不能な値は文字列化
+        def _safe(v):
+            if v is None: return ''
+            try:
+                import math
+                if isinstance(v, float) and math.isnan(v): return ''
+            except Exception: pass
+            if isinstance(v, (int, float, bool)): return v
+            # numpy スカラー → Python ネイティブ型
+            try:
+                return v.item()
+            except AttributeError:
+                pass
+            return str(v)
+        safe_records = [{str(k): _safe(v) for k, v in row.items()} for row in records]
+        json_str = json.dumps(safe_records, ensure_ascii=False)
+        filename = f'artemis_export_{pd.Timestamp.now().strftime("%Y%m%d_%H%M")}.xlsx'
+        window.exportToExcel(json_str, '特許データ', filename)
+        document.getElementById('export-result').innerHTML = f'<div class="status-ok">📊 Excelファイルをダウンロードしました ({len(safe_records):,}行)</div>'
+    except Exception as e:
+        document.getElementById('export-result').innerHTML = f'<div class="status-err">❌ Excelエクスポートエラー: {str(e)}</div>'
+
+# =====================================================
+# Geography / コロプレス地図
+# =====================================================
+
+import re as _re
+
+_GEO_COUNTRY_MAP = {
+    'JP': '日本', 'US': 'アメリカ', 'CN': '中国', 'KR': '韓国',
+    'DE': 'ドイツ', 'GB': 'イギリス', 'FR': 'フランス',
+    'AU': 'オーストラリア', 'CA': 'カナダ', 'IT': 'イタリア', 'SE': 'スウェーデン',
+    'NL': 'オランダ', 'CH': 'スイス', 'FI': 'フィンランド', 'DK': 'デンマーク',
+    'AT': 'オーストリア', 'BE': 'ベルギー', 'NO': 'ノルウェー', 'IL': 'イスラエル',
+    'TW': '台湾', 'IN': 'インド', 'RU': 'ロシア', 'BR': 'ブラジル',
+    'MX': 'メキシコ', 'ZA': '南アフリカ', 'ES': 'スペイン', 'PT': 'ポルトガル',
+    'PL': 'ポーランド', 'CZ': 'チェコ', 'HU': 'ハンガリー', 'RO': 'ルーマニア',
+    'SG': 'シンガポール', 'HK': '香港', 'NZ': 'ニュージーランド',
+    'MY': 'マレーシア', 'TH': 'タイ', 'ID': 'インドネシア', 'PH': 'フィリピン',
+    'VN': 'ベトナム', 'TR': 'トルコ', 'SA': 'サウジアラビア', 'AE': 'UAE',
+    'AR': 'アルゼンチン', 'CL': 'チリ', 'CO': 'コロンビア',
+    'UA': 'ウクライナ', 'GR': 'ギリシャ', 'SK': 'スロバキア', 'BG': 'ブルガリア',
+}
+
+_JP_KANJI_PREFIXES = ('特開', '特許', '特表', '実開', '実用', '再公表特許', '再公表')
+_KR_KANJI_PREFIXES = ('등록특허', '공개특허', '등록실용', '공개실용')
+
+def _extract_country_code_ja(series, method='auto'):
+    def from_patent_id(val):
+        if not val or not isinstance(val, str): return None
+        v = val.strip()
+        # J-PlatPat 漢字形式: 特開YYYY-NNNNNN / 特許NNNNNN / 特表 / 実開 等 → JP
+        for prefix in _JP_KANJI_PREFIXES:
+            if v.startswith(prefix): return 'JP'
+        # 韓国 Kipris 形式 → KR
+        for prefix in _KR_KANJI_PREFIXES:
+            if v.lower().startswith(prefix.lower()): return 'KR'
+        clean = v.upper()
+        # JP2020-123456, JP-2020-123456, JP/2020/123456, JP 2020 等に対応
+        m = _re.match(r'^([A-Z]{2})[-/ ]?\d', clean)
+        return m.group(1) if m and m.group(1) in _GEO_COUNTRY_MAP else None
+    def from_applicant(val):
+        if not val or not isinstance(val, str): return None
+        for pat in [r'\[([A-Z]{2})\]', r'\(([A-Z]{2})\)']:
+            m = _re.search(pat, val)
+            if m and m.group(1) in _GEO_COUNTRY_MAP: return m.group(1)
+        m = _re.match(r'^([A-Z]{2})/', val.strip())
+        return m.group(1) if m and m.group(1) in _GEO_COUNTRY_MAP else None
+    def from_2letter(val):
+        """列に 'JP','US' 等の2文字コードが直接入っている場合"""
+        if not val or not isinstance(val, str): return None
+        clean = val.strip().upper()
+        return clean if clean in _GEO_COUNTRY_MAP else None
+    if method == 'patent_id': return series.apply(from_patent_id)
+    if method == 'applicant': return series.apply(from_applicant)
+    if method == 'country_col': return series.apply(from_2letter)
+    # Auto: 特許番号 → 出願人 → 2文字コード の順で試行
+    result = series.apply(from_patent_id)
+    missing = result.isna()
+    if missing.sum() < len(series) * 0.5: return result
+    result2 = series.apply(from_applicant)
+    result[missing] = result2[missing]
+    missing2 = result.isna()
+    if missing2.sum() < len(series) * 0.5: return result
+    result3 = series.apply(from_2letter)
+    result[missing2] = result3[missing2]
+    return result
+
+def _country_to_iso3_ja(code2):
+    _map = {
+        'JP':'JPN','US':'USA','CN':'CHN','KR':'KOR','DE':'DEU','GB':'GBR','FR':'FRA',
+        'AU':'AUS','CA':'CAN','IT':'ITA','SE':'SWE','NL':'NLD','CH':'CHE','FI':'FIN',
+        'DK':'DNK','AT':'AUT','BE':'BEL','NO':'NOR','IL':'ISR','TW':'TWN','IN':'IND',
+        'RU':'RUS','BR':'BRA','MX':'MEX','ZA':'ZAF','ES':'ESP','PT':'PRT','PL':'POL',
+        'CZ':'CZE','HU':'HUN','RO':'ROU','SG':'SGP','HK':'HKG','NZ':'NZL','MY':'MYS',
+        'TH':'THA','ID':'IDN','PH':'PHL','VN':'VNM','TR':'TUR','SA':'SAU','AE':'ARE',
+        'AR':'ARG','CL':'CHL','CO':'COL','UA':'UKR','GR':'GRC','SK':'SVK','BG':'BGR',
+    }
+    return _map.get(code2, code2)
+
+@ensure_data('geo-status', 'データが読み込まれていません')
+def show_geography(event):
+    global g_df_processed, g_col_map
+    import html as html_module
+
+    UIHelper.set_button_loading('btn-geo', True)
+    document.getElementById('geo-status').innerHTML = '<span class="spinner"></span> 分析中...'
+
+    try:
+        df = g_df_processed.copy()
+        source = document.getElementById('geo-source').value
+        maptype = document.getElementById('geo-maptype').value
+        colorscale = document.getElementById('geo-colorscale').value
+        year_start = int(document.getElementById('geo-year-start').value)
+        year_end = int(document.getElementById('geo-year-end').value)
+
+        # 有効な年データがある場合のみフィルタ（year=0 は日付なし行のため全件スキップなら除外しない）
+        if 'year' in df.columns and int(df['year'].max()) > 0:
+            df = df[df['year'].between(year_start, year_end, inclusive='both')]
+
+        # 専用の国・地域列を優先検索（country / 国名 / 出願国 等）
+        dedicated_country_col = next(
+            (c for c in df.columns if _re.match(
+                r'^(country|国|国名|country_?code|国[\s・/]?地域|出願国|origin|region)$', c, _re.I)), None)
+
+        def _best_col_for_geo(df_inner, method):
+            """全列を走査し、国コード抽出率が最も高い列を返す（先頭30件で高速判定）"""
+            best_col, best_cnt = None, 0
+            for col in df_inner.columns:
+                if col.startswith('_'): continue
+                sample = df_inner[col].dropna().head(30)
+                if len(sample) == 0: continue
+                s = _extract_country_code_ja(sample.astype(str), method)
+                cnt = int(s.notna().sum())
+                if cnt > best_cnt:
+                    best_cnt, best_col = cnt, col
+            return best_col, best_cnt
+
+        if dedicated_country_col and source == 'auto':
+            country_series = _extract_country_code_ja(
+                df[dedicated_country_col].fillna('').astype(str), 'country_col')
+        elif source == 'auto':
+            # まず列名でパターンマッチ（J-PlatPat の文献番号/公開番号 を含む）
+            patent_id_col = next(
+                (c for c in df.columns if _re.match(
+                    r'^(application_?number|patent_?no|patent_?id|出願番号|公開番号|'
+                    r'文献番号|特許番号|publication_?number|doc_?number|文献id)$', c, _re.I)), None)
+            applicant_col = g_col_map.get('applicant', None)
+            if patent_id_col:
+                country_series = _extract_country_code_ja(df[patent_id_col].fillna('').astype(str), 'patent_id')
+                # 1件も取れなかったら全列スキャンにフォールバック
+                if country_series.notna().sum() == 0:
+                    patent_id_col = None
+            if not patent_id_col:
+                # 全列から最も抽出率が高い列を自動選択
+                best_col, best_cnt = _best_col_for_geo(df, 'patent_id')
+                if best_cnt > 0:
+                    country_series = _extract_country_code_ja(df[best_col].fillna('').astype(str), 'patent_id')
+                elif applicant_col and applicant_col in df.columns:
+                    country_series = _extract_country_code_ja(df[applicant_col].fillna('').astype(str), 'applicant')
+                else:
+                    best_col2, _ = _best_col_for_geo(df, 'applicant')
+                    col2 = best_col2 or df.columns[0]
+                    country_series = _extract_country_code_ja(df[col2].fillna('').astype(str), 'auto')
+        elif source == 'patent_id':
+            id_col = next(
+                (c for c in df.columns if _re.match(
+                    r'^(application_?number|patent_?no|patent_?id|出願番号|公開番号|'
+                    r'文献番号|特許番号|publication_?number|doc_?number|文献id)$', c, _re.I)), df.columns[0])
+            country_series = _extract_country_code_ja(df[id_col].fillna('').astype(str), 'patent_id')
+            if country_series.notna().sum() == 0:
+                # 全列スキャンで補完
+                best_col, _ = _best_col_for_geo(df, 'patent_id')
+                if best_col:
+                    country_series = _extract_country_code_ja(df[best_col].fillna('').astype(str), 'patent_id')
+        else:
+            applicant_col = g_col_map.get('applicant', df.columns[0])
+            if applicant_col not in df.columns: applicant_col = df.columns[0]
+            country_series = _extract_country_code_ja(df[applicant_col].fillna('').astype(str), 'applicant')
+
+        df = df.copy()
+        df['_country'] = country_series
+        country_counts = df['_country'].dropna().value_counts()
+
+        if len(country_counts) == 0:
+            # 全列のサンプルを確認できるヒントを表示
+            sample_rows = []
+            for col in list(df.columns[:5]):
+                if col.startswith('_'): continue
+                v = df[col].dropna().head(1).tolist()
+                if v: sample_rows.append(f'{col}: {v[0]}')
+            sample_hint = ' ／ '.join(sample_rows) if sample_rows else '（空）'
+            UIHelper.show_error('geo-status', '国コードが見つかりません',
+                f'「国コード抽出元」を変更するか、出願番号が国コード（JP, US等）で始まることを確認してください。'
+                f'<br><small>検出列サンプル: {sample_hint}</small>')
+            return
+
+        countries = list(country_counts.index)
+        counts = [int(v) for v in country_counts.values]
+        country_names = [_GEO_COUNTRY_MAP.get(c, c) for c in countries]
+
+        if maptype == 'choropleth':
+            trace = {
+                "type": "choropleth", "locationmode": "ISO-3",
+                "locations": [_country_to_iso3_ja(c) for c in countries],
+                "z": counts,
+                "text": [f"{_GEO_COUNTRY_MAP.get(c, c)}: {v:,}件" for c, v in zip(countries, counts)],
+                "hoverinfo": "text",
+                "colorscale": colorscale, "showscale": True,
+                "colorbar": {"title": "件数", "thickness": 14},
+            }
+        else:
+            geo_lat = {'JP':36,'US':40,'CN':35,'KR':37,'DE':51,'GB':54,'FR':46,'AU':-25,'CA':56,'IT':43,
+                       'SE':62,'NL':52,'CH':47,'FI':64,'DK':56,'AT':47,'BE':51,'NO':62,'IL':31,'TW':24,
+                       'IN':22,'RU':60,'BR':-10,'MX':23,'ZA':-29,'ES':40,'PT':39,'SG':1}
+            geo_lon = {'JP':138,'US':-98,'CN':104,'KR':128,'DE':10,'GB':-2,'FR':2,'AU':133,'CA':-97,'IT':12,
+                       'SE':18,'NL':5,'CH':8,'FI':26,'DK':10,'AT':14,'BE':4,'NO':10,'IL':35,'TW':121,
+                       'IN':80,'RU':100,'BR':-55,'MX':-102,'ZA':25,'ES':-4,'PT':-8,'SG':104}
+            # 未知の国コード（座標なし）は除外してプロット
+            known = [(c, v, n) for c, v, n in zip(countries, counts, country_names) if c in geo_lat]
+            if not known:
+                known = list(zip(countries, counts, country_names))  # 全て未知なら除外しない（0,0に表示）
+            sc, sv, sn = zip(*known) if known else ([], [], [])
+            lats = [geo_lat.get(c, 0) for c in sc]
+            lons = [geo_lon.get(c, 0) for c in sc]
+            sv = list(sv)
+            max_cnt = max(sv) or 1
+            trace = {
+                "type": "scattergeo", "lat": lats, "lon": lons,
+                "text": [f"{nm}<br>{v:,}件" for nm, v in zip(sn, sv)],
+                "mode": "markers", "hoverinfo": "text",
+                "marker": {
+                    "size": [max(8, int(40 * v / max_cnt)) for v in sv],
+                    "color": sv, "colorscale": colorscale, "showscale": True,
+                    "colorbar": {"title": "件数", "thickness": 14},
+                    "opacity": 0.8, "line": {"width": 0.5, "color": "#fff"},
+                }
+            }
+
+        layout = ChartHelper.create_layout(
+            title=f"特許出願の地理的分布 ({year_start}〜{year_end}年)",
+            height=480, showlegend=False,
+            paper_bgcolor="#0d1420", plot_bgcolor="#0d1420",
+        )
+        layout["geo"] = {
+            "showframe": False, "showcoastlines": True, "coastlinecolor": "#334155",
+            "showland": True, "landcolor": "#1e293b",
+            "showocean": True, "oceancolor": "#0d1420",
+            "showlakes": False, "projection": {"type": "natural earth"},
+            "bgcolor": "#0d1420",
+        }
+        ChartHelper.draw("geo-chart", [trace], layout)
+
+        total_shown = sum(counts)
+        table_html = '<table class="data-table"><tr><th>順位</th><th>国・地域</th><th>コード</th><th>件数</th><th>割合</th></tr>'
+        for rank, (code, cnt, name) in enumerate(zip(countries, counts, country_names), 1):
+            pct = cnt / total_shown * 100 if total_shown > 0 else 0
+            table_html += f'<tr><td>{rank}</td><td>{html_module.escape(name)}</td><td><code>{code}</code></td><td>{cnt:,}</td><td>{pct:.1f}%</td></tr>'
+        table_html += '</table>'
+        document.getElementById('geo-table').innerHTML = table_html
+
+        UIHelper.show_success('geo-status', '分析完了', f'{len(countries)}ヵ国を検出 (合計 {total_shown:,}件)')
+
+    except Exception as e:
+        import traceback
+        UIHelper.show_error('geo-status', 'エラー', str(e))
+        debugLog(traceback.format_exc())
+    finally:
+        UIHelper.set_button_loading('btn-geo', False)
+
 # =====================================================
 # イベント登録
+
 # =====================================================
 g_proxies.clear()
 file_proxy = create_proxy(on_file_change)
@@ -11160,6 +11689,8 @@ document.getElementById('btn-export-keywords').addEventListener('click', create_
 document.getElementById('btn-strategy').addEventListener('click', create_proxy(show_strategy_matrix))
 document.getElementById('btn-generate-report').addEventListener('click', create_proxy(generate_report))
 document.getElementById('btn-export-all').addEventListener('click', create_proxy(export_all_data))
+document.getElementById('btn-export-excel').addEventListener('click', create_proxy(export_excel))
+document.getElementById('btn-geo').addEventListener('click', create_proxy(show_geography))
 document.getElementById('btn-treemap').addEventListener('click', create_proxy(show_treemap))
 document.getElementById('btn-sankey').addEventListener('click', create_proxy(show_sankey))
 document.getElementById('btn-radar').addEventListener('click', create_proxy(show_radar))

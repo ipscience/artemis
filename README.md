@@ -53,7 +53,8 @@
 | **Keywords** | Keyword trends, KWIC search, co-occurrence analysis |
 | **Network** | Inventor/applicant network, Sankey diagrams |
 | **Advanced** | Circle packing & advanced visualization |
-| **Export** | CSV/JSON/HTML report output |
+| **Geography** |  Country/region choropleth & bubble map |
+| **Export** | CSV/JSON/HTML report output + **Excel (.xlsx)** |
 
 ## 🛠️ Tech Stack
 
@@ -62,7 +63,9 @@
 - **Plotly.js 2.27.0** - Interactive charts
 - **D3.js v7** - Word cloud, network, Sankey diagrams
 - **PapaParse 5.4.1** - CSV parsing
+- **SheetJS (xlsx.js) 0.18.5** - Excel export
 - **Transformers.js** - SBERT embeddings in browser (all-MiniLM-L6-v2)
+- **Service Worker** - CDN asset caching for faster repeated loads
 
 ### Python (Pyodide)
 - **pandas** - Data processing
@@ -90,9 +93,11 @@ artemis/
 
 - **Dark Theme**: Eye-friendly modern design
 - **Glassmorphism**: Semi-transparent cards & panels
-- **Responsive**: Desktop & tablet support
+- **Responsive**: Desktop, tablet & **mobile** (hamburger menu at ≤600px)
 - **Animations**: Smooth transition effects
 - **Toast Notifications**: Real-time processing status
+- **Column Memory**: Column mapping auto-saved to `localStorage`
+- **Language Switcher**: EN ⇌ JA toggle in the header
 
 ## 📄 License
 
